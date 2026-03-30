@@ -46,9 +46,6 @@ export function StartScreen({ onStart }: StartScreenProps) {
         </Link>
       </motion.div>
       
-      <div className="absolute bottom-4 text-muted-foreground font-sans text-lg animate-pulse">
-        Ready Player One
-      </div>
     </div>
   );
 }

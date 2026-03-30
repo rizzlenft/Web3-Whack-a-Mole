@@ -122,7 +122,6 @@
   
   .crt-flicker {
     animation: flicker 0.15s infinite;
-    pointer-events: none;
   }
 
   /* Custom cursor for whack-a-mole */
