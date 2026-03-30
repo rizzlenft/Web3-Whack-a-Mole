@@ -1,0 +1,16 @@
+packages:
+  "framer-motion": "For retro animations, UI transitions, and bonk particle effects"
+  "lucide-react": "Icons for the UI"
+  "canvas-confetti": "For celebration effect on game over"
+  "@types/canvas-confetti": "Types for canvas-confetti"
+  "clsx": "For conditional class merging"
+  "tailwind-merge": "For class merging"
+
+images:
+  - path: "artifacts/whack-a-mole/public/images/arcade-bg.png"
+    description: "Pixel art background of a dark retro arcade cabinet screen with glowing neon purple and cyan grid lines, 8-bit style, dark and moody"
+    aspect_ratio: "16:9"
+
+notes:
+  - "Assuming @workspace/api-client-react provides useGetLeaderboard and useSubmitScore"
+  - "Using provided placeholder-pfp.png for moles"
