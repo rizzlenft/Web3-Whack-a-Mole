@@ -35,7 +35,7 @@ export function MoleHole({ mole, onWhack }: MoleHoleProps) {
   }, [mole.active]);
 
   return (
-    <div className="relative w-28 h-28 sm:w-36 sm:h-36 md:w-44 md:h-44 mx-auto select-none mt-4">
+    <div className="relative w-16 h-16 sm:w-24 sm:h-24 md:w-32 md:h-32 mx-auto select-none mt-4">
       
       {/* Background Dirt Hole Image */}
       <div 

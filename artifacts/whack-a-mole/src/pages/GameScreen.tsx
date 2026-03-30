@@ -3,6 +3,7 @@ import { MoleHole } from '@/components/MoleHole';
 import { MoleState } from '@/hooks/use-game-engine';
 import { Timer } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { GameLogo } from '@/components/GameLogo';
 
 interface GameScreenProps {
   score: number;
@@ -36,16 +37,16 @@ export function GameScreen({ score, timeLeft, moles, onWhack }: GameScreenProps)
   const progressPercent = (timeLeft / 30) * 100;
 
   return (
-    <div className="w-full h-full min-h-[600px] flex flex-col p-4 md:p-8 game-bg relative overflow-hidden">
+    <div className="w-full h-full min-h-[600px] flex flex-col p-4 md:p-8 game-bg relative overflow-hidden cursor-mallet">
       
       {/* HUD */}
-      <div className="flex flex-col gap-2 mb-8 z-10">
+      <div className="flex flex-col gap-2 mb-3 z-10">
         <div className="flex justify-between items-center bg-card/90 p-4 border-4 border-primary box-shadow-neon rounded-sm">
           <div className="flex flex-col relative">
             <span className="text-secondary font-display text-sm md:text-base mb-1 flex items-center gap-2">
               🪙 SCORE
             </span>
-            <span className="text-4xl md:text-6xl font-sans text-primary text-shadow-neon font-bold tracking-widest bg-black px-4 py-1 border-2 border-primary/50 rounded shadow-inner">
+            <span className="text-2xl md:text-3xl font-sans text-primary text-shadow-neon font-bold tracking-widest bg-black px-3 py-1 border-2 border-primary/50 rounded shadow-inner">
               {score.toString().padStart(4, '0')}
             </span>
             <AnimatePresence>
@@ -66,7 +67,7 @@ export function GameScreen({ score, timeLeft, moles, onWhack }: GameScreenProps)
             <span className="text-secondary font-display text-sm md:text-base flex items-center gap-2 mb-1">
               <Timer className="w-4 h-4" /> ⏰ TIME LEFT
             </span>
-            <span className={`text-4xl md:text-6xl font-sans font-bold tracking-widest bg-black px-4 py-1 border-2 border-secondary/50 rounded shadow-inner ${timeColor} ${timeLeft <= 5 ? 'animate-pulse' : ''} drop-shadow-[0_0_10px_currentColor]`}>
+            <span className={`text-2xl md:text-3xl font-sans font-bold tracking-widest bg-black px-3 py-1 border-2 border-secondary/50 rounded shadow-inner ${timeColor} ${timeLeft <= 5 ? 'animate-pulse' : ''} drop-shadow-[0_0_10px_currentColor]`}>
               {timeLeft.toString().padStart(2, '0')}
             </span>
           </div>
@@ -80,9 +81,13 @@ export function GameScreen({ score, timeLeft, moles, onWhack }: GameScreenProps)
         </div>
       </div>
 
+      <div className="flex justify-center w-full mb-3 z-10 border-b-2 border-primary/30 pb-3 shadow-[0_4px_10px_rgba(255,0,255,0.1)]">
+        <GameLogo size="sm" />
+      </div>
+
       {/* Grid */}
       <div className="flex-1 flex items-center justify-center z-10 pb-8">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 md:gap-8 lg:gap-12 w-full max-w-4xl">
+        <div className="grid grid-cols-4 gap-2 sm:gap-4 md:gap-6 w-full max-w-4xl mx-auto">
           {moles.map(mole => (
             <MoleHole 
               key={mole.id} 

@@ -9,7 +9,7 @@ function cn(...inputs: ClassValue[]) {
 export function ArcadeCabinet({ children, className }: { children: React.ReactNode, className?: string }) {
   return (
     <div className={cn(
-      "w-full max-w-5xl mx-auto min-h-[600px] border-[16px] md:border-[24px] border-[#2A1610] rounded-t-3xl rounded-b-lg p-3 md:p-8 relative overflow-hidden bg-zinc-950",
+      "w-full max-w-5xl mx-auto min-h-[600px] border-[10px] md:border-[20px] border-[#2A1610] rounded-t-3xl rounded-b-lg p-2 md:p-6 relative overflow-hidden bg-zinc-950",
       "shadow-[0_0_50px_rgba(255,0,255,0.3),inset_0_0_40px_rgba(0,0,0,0.8)]",
       className
     )}

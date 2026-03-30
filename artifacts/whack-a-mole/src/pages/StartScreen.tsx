@@ -4,6 +4,7 @@ import { Button } from '@/components/Button';
 import { Trophy, Hammer } from 'lucide-react';
 import { Link } from 'wouter';
 import { useGetLeaderboard } from '@workspace/api-client-react';
+import { GameLogo } from '@/components/GameLogo';
 
 interface StartScreenProps {
   onStart: () => void;
@@ -21,7 +22,7 @@ export function StartScreen({ onStart }: StartScreenProps) {
         TOP SCORE: {topScore.toString().padStart(4, '0')}
       </div>
 
-      <div className="flex-1 flex flex-col items-center justify-center w-full z-10">
+      <div className="flex-1 flex flex-col items-center justify-center w-full z-10 pb-16">
         <motion.div
           initial={{ y: -50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -35,15 +36,7 @@ export function StartScreen({ onStart }: StartScreenProps) {
           >
             🐀
           </motion.div>
-          <h1 className="text-4xl md:text-6xl text-primary text-shadow-neon leading-tight mb-4 tracking-widest flex flex-wrap justify-center gap-2">
-            {'WEB3'.split('').map((char, i) => (
-              <motion.span key={i} initial={{opacity:0, scale: 0}} animate={{opacity:1, scale:1}} transition={{delay: i*0.1}}>{char}</motion.span>
-            ))}
-            <br className="hidden md:block"/>
-            {'WHACK-A-MOLE'.split('').map((char, i) => (
-              <motion.span key={i+4} initial={{opacity:0, scale: 0}} animate={{opacity:1, scale:1}} transition={{delay: (i+4)*0.1}}>{char}</motion.span>
-            ))}
-          </h1>
+          <GameLogo size="lg" />
           <p className="text-xl md:text-2xl text-secondary text-shadow-cyan font-sans uppercase font-bold tracking-widest bg-zinc-900/80 px-4 py-2 rounded-md border border-secondary/30 mt-4">
             Bonk The Scammers. Save The Chain. 📉
           </p>
@@ -55,7 +48,7 @@ export function StartScreen({ onStart }: StartScreenProps) {
           transition={{ delay: 0.5 }}
           className="flex flex-col gap-6 w-full max-w-sm"
         >
-          <Button size="lg" onClick={onStart} className="w-full group relative overflow-hidden animate-[pulse_2s_infinite]">
+          <Button size="lg" onClick={onStart} className="w-full min-h-[48px] py-3 group relative overflow-hidden animate-[pulse_2s_infinite]">
             <span className="relative z-10 flex items-center justify-center gap-3">
               <Hammer className="w-6 h-6 group-hover:-rotate-45 transition-transform" />
               INSERT COIN TO PLAY
@@ -63,7 +56,7 @@ export function StartScreen({ onStart }: StartScreenProps) {
           </Button>
           
           <Link href="/leaderboard" className="w-full">
-            <Button variant="secondary" size="md" className="w-full flex items-center justify-center gap-3">
+            <Button variant="secondary" size="md" className="w-full min-h-[48px] py-3 flex items-center justify-center gap-3">
               <Trophy className="w-5 h-5" />
               LEADERBOARD
             </Button>
