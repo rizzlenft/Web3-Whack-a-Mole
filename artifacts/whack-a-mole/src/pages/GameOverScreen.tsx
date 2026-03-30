@@ -27,7 +27,6 @@ export function GameOverScreen({ score, onRestart }: GameOverScreenProps) {
   });
 
   useEffect(() => {
-    // Fire confetti on game over
     const duration = 3000;
     const end = Date.now() + duration;
 
@@ -60,63 +59,80 @@ export function GameOverScreen({ score, onRestart }: GameOverScreenProps) {
     submitScore({ data: { playerName: playerName.trim(), score } });
   };
 
+  const getFlavorText = () => {
+    if (score <= 5) return "LFG... nowhere. Absolutely NGMI. 💀";
+    if (score <= 12) return "Mid at best. Probably still gonna zero. 📉";
+    if (score <= 20) return "Respectable. WAGMI maybe. 📈";
+    return "CHAD DETECTOR. You are the alpha. 👑";
+  };
+
   return (
-    <div className="w-full h-full min-h-[500px] flex flex-col items-center justify-center p-8 text-center relative">
+    <div className="w-full h-full min-h-[600px] flex flex-col items-center justify-center p-8 text-center relative game-bg">
       <motion.div
         initial={{ scale: 0.5, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", bounce: 0.6 }}
-        className="mb-8"
+        className="mb-8 z-10"
       >
-        <h2 className="text-5xl md:text-7xl text-destructive text-shadow-neon mb-2">
-          GAME OVER
+        <h2 
+          className="text-6xl md:text-8xl text-destructive font-display tracking-widest mb-4"
+          style={{ textShadow: '4px 4px 0px #ff00ff, -4px -4px 0px #00ffff' }}
+        >
+          GAME<br/>OVER
         </h2>
-        <div className="text-2xl md:text-3xl font-sans text-white">
-          FINAL SCORE: <span className="text-secondary text-shadow-cyan text-4xl">{score}</span>
+        <div className="text-3xl md:text-5xl font-sans text-white bg-black/50 p-4 border-2 border-primary rounded-lg inline-block">
+          <span className="text-yellow-400">🪙 ×</span> <span className="text-primary text-shadow-neon font-bold">{score}</span>
         </div>
+        <p className="mt-6 text-xl md:text-2xl text-accent font-sans uppercase tracking-widest animate-pulse">
+          {getFlavorText()}
+        </p>
       </motion.div>
 
       <motion.div 
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.5 }}
-        className="w-full max-w-md bg-card border-4 border-primary p-6 mb-8 box-shadow-neon"
+        className="w-full max-w-md bg-zinc-950 border-4 border-secondary p-8 mb-8 box-shadow-cyan z-10 rounded-sm relative"
       >
         {!submitted ? (
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <label className="font-display text-primary text-sm text-left">ENTER INITIALS:</label>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+            <label className="font-display text-secondary text-sm md:text-base text-center animate-[pulse_2s_infinite]">
+              ENTER YOUR NAME
+            </label>
             <input
               type="text"
               maxLength={15}
               value={playerName}
               onChange={(e) => setPlayerName(e.target.value.toUpperCase())}
-              placeholder="PLAYER 1"
-              className="bg-input border-4 border-secondary text-secondary-foreground font-sans text-3xl p-3 focus:outline-none focus:border-primary transition-colors text-white"
+              placeholder="___"
+              className="bg-black border-b-4 border-primary text-primary font-display text-2xl md:text-3xl p-4 text-center focus:outline-none focus:border-accent transition-colors placeholder:text-zinc-700 uppercase"
               required
+              autoFocus
             />
             <Button 
               type="submit" 
               disabled={isPending || !playerName.trim()} 
-              className="w-full mt-2"
+              className="w-full mt-2 font-display text-xl animate-[pulse_1s_infinite] hover:animate-none"
+              variant="primary"
             >
-              {isPending ? 'SAVING...' : 'SUBMIT SCORE'}
+              {isPending ? 'SAVING...' : 'SUBMIT'}
             </Button>
           </form>
         ) : (
-          <div className="flex flex-col items-center justify-center py-6 text-accent">
-            <CheckCircle2 className="w-16 h-16 mb-4 animate-bounce" />
-            <h3 className="font-display text-xl">SCORE SAVED!</h3>
+          <div className="flex flex-col items-center justify-center py-8 text-accent">
+            <CheckCircle2 className="w-16 h-16 mb-4 animate-bounce drop-shadow-[0_0_10px_currentColor]" />
+            <h3 className="font-display text-xl">SCORE RECORDED!</h3>
           </div>
         )}
       </motion.div>
 
-      <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
-        <Button variant="secondary" onClick={onRestart} className="flex-1 flex items-center justify-center gap-2">
+      <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md z-10">
+        <Button variant="secondary" onClick={onRestart} className="flex-1 flex items-center justify-center gap-2 text-lg">
           <RotateCcw className="w-5 h-5" />
-          PLAY AGAIN
+          RETRY
         </Button>
         <Link href="/leaderboard" className="flex-1">
-          <Button variant="ghost" className="w-full flex items-center justify-center gap-2 text-white border-white">
+          <Button variant="ghost" className="w-full flex items-center justify-center gap-2 text-white border-white text-lg hover:border-secondary hover:text-secondary">
             <Trophy className="w-5 h-5" />
             RANKS
           </Button>

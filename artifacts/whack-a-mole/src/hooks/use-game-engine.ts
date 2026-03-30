@@ -9,7 +9,7 @@ export type MoleState = {
 };
 
 const TOTAL_HOLES = 8;
-const GAME_DURATION_SEC = 60;
+const GAME_DURATION_SEC = 30;
 
 export function useGameEngine() {
   const [status, setStatus] = useState<GameStatus>('START');

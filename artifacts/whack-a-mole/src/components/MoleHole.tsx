@@ -8,6 +8,16 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+const DEGEN_PHRASES = [
+  'REKT!', 'RUGGED!', 'NGMI!', 'GG SER', 'DUMPED!',
+  'EXIT SCAM', 'LIQUIDATED', 'PONZI!', 'HACKED!', 'PAPER HANDS',
+  'SEND IT!', 'RIP BAGS', 'DOWN ONLY', 'SCAMMER!', 'GONNA ZERO',
+];
+
+function getRandomPhrase() {
+  return DEGEN_PHRASES[Math.floor(Math.random() * DEGEN_PHRASES.length)];
+}
+
 interface MoleHoleProps {
   mole: MoleState;
   onWhack: (id: number) => void;
@@ -15,17 +25,43 @@ interface MoleHoleProps {
 
 export function MoleHole({ mole, onWhack }: MoleHoleProps) {
   const pfpSrc = `${import.meta.env.BASE_URL}placeholder-pfp.png`;
+  const [hitPhrase] = React.useState(() => getRandomPhrase());
+  const currentPhrase = React.useRef(hitPhrase);
+  
+  React.useEffect(() => {
+    if (!mole.active) {
+      currentPhrase.current = getRandomPhrase();
+    }
+  }, [mole.active]);
 
   return (
-    <div className="relative w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 mx-auto select-none">
+    <div className="relative w-28 h-28 sm:w-36 sm:h-36 md:w-44 md:h-44 mx-auto select-none mt-4">
       
-      {/* Background Dirt Hole */}
-      <div className="absolute bottom-0 left-0 w-full h-[40%] bg-zinc-950 rounded-[100%] shadow-[inset_0_10px_20px_rgba(0,0,0,1)] border-b-4 border-zinc-800 z-0">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_50%,_rgba(0,0,0,0.8)_100%)] rounded-[100%]" />
+      {/* Background Dirt Hole Image */}
+      <div 
+        className="absolute bottom-0 left-0 w-full h-[60%] z-0 rounded-full overflow-hidden shadow-[0_10px_20px_rgba(0,0,0,0.8)] opacity-90 border-b-4 border-zinc-900"
+      >
+        <img src="/images/dirt-mound.png" alt="Dirt Hole" className="w-full h-full object-cover scale-150" />
+        {/* Shadow inside hole */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(0,0,0,0.9)_20%,_transparent_70%)]" />
       </div>
 
+      {/* Subtle "?" or glowing eyes when inactive */}
+      <AnimatePresence>
+        {!mole.active && !mole.whacked && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.5 }}
+            exit={{ opacity: 0 }}
+            className="absolute bottom-[20%] left-1/2 -translate-x-1/2 text-zinc-500 font-display text-sm animate-pulse z-0"
+          >
+            ?
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* The Mole / PFP Container */}
-      <div className="absolute bottom-[20%] left-[10%] w-[80%] h-[120%] overflow-hidden z-10">
+      <div className="absolute bottom-[20%] left-[10%] w-[80%] h-[120%] overflow-hidden z-10 pointer-events-none">
         <motion.div
           initial={{ y: '100%' }}
           animate={{ 
@@ -40,9 +76,15 @@ export function MoleHole({ mole, onWhack }: MoleHoleProps) {
           }}
           className="w-full h-full relative flex items-end justify-center"
         >
+          {/* Shadow under mole */}
+          {mole.active && !mole.whacked && (
+            <div className="absolute bottom-0 w-3/4 h-4 bg-black/60 rounded-full blur-sm -z-10" />
+          )}
+
           <div className={cn(
-            "w-[90%] aspect-square rounded-full border-4 border-primary shadow-[0_0_15px_rgba(255,0,255,0.8)] overflow-hidden bg-background relative",
-            mole.whacked ? "brightness-150 contrast-125 sepia" : ""
+            "w-[90%] aspect-square rounded-full border-4 shadow-[0_0_20px_rgba(255,0,0,0.8)] overflow-hidden bg-background relative pointer-events-auto",
+            mole.active && !mole.whacked ? "border-destructive animate-[pulse_0.5s_infinite]" : "border-primary",
+            mole.whacked ? "brightness-50 contrast-150 sepia grayscale border-zinc-700 shadow-none" : ""
           )}>
             <img 
               src={pfpSrc} 
@@ -55,11 +97,10 @@ export function MoleHole({ mole, onWhack }: MoleHoleProps) {
             <AnimatePresence>
               {mole.whacked && (
                 <motion.div
-                  initial={{ opacity: 0.8 }}
+                  initial={{ opacity: 1 }}
                   animate={{ opacity: 0 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="absolute inset-0 bg-white z-20 pointer-events-none"
+                  transition={{ duration: 0.3 }}
+                  className="absolute inset-0 bg-red-500 z-20 pointer-events-none mix-blend-overlay"
                 />
               )}
             </AnimatePresence>
@@ -68,20 +109,32 @@ export function MoleHole({ mole, onWhack }: MoleHoleProps) {
       </div>
 
       {/* Front Lip of Hole for 3D effect */}
-      <div className="absolute bottom-[-5%] left-[-5%] w-[110%] h-[45%] rounded-[100%] border-t-8 border-zinc-900 z-20 pointer-events-none opacity-90 shadow-[0_-5px_10px_rgba(0,0,0,0.5)]" />
+      <div className="absolute bottom-[-10%] left-[-5%] w-[110%] h-[40%] bg-[url('/images/dirt-mound.png')] bg-cover bg-bottom rounded-t-[100%] rounded-b-[100%] z-20 pointer-events-none opacity-90 shadow-[0_-5px_15px_rgba(0,0,0,0.8)]" />
+
+      {/* Particle Burst on pop up */}
+      <AnimatePresence>
+        {mole.active && !mole.whacked && (
+          <motion.div
+            initial={{ opacity: 1, scale: 0.5 }}
+            animate={{ opacity: 0, scale: 1.5 }}
+            transition={{ duration: 0.3 }}
+            className="absolute bottom-[10%] left-[10%] w-[80%] h-[50%] bg-[radial-gradient(circle,_#8B4513_10%,_transparent_60%)] z-20 pointer-events-none blur-sm"
+          />
+        )}
+      </AnimatePresence>
 
       {/* Hit / BONK Effect */}
       <AnimatePresence>
         {mole.whacked && (
           <motion.div
-            initial={{ scale: 0.5, opacity: 0, y: 0, rotate: -20 }}
-            animate={{ scale: 1.2, opacity: 1, y: -40, rotate: 10 }}
-            exit={{ scale: 1.5, opacity: 0, y: -60 }}
-            transition={{ type: 'spring', duration: 0.4 }}
-            className="absolute top-0 left-0 w-full h-full flex items-center justify-center z-40 pointer-events-none"
+            initial={{ scale: 0.1, opacity: 0, y: 20, rotate: -30 }}
+            animate={{ scale: [1.5, 1.2], opacity: 1, y: -60, rotate: [15, 10] }}
+            exit={{ scale: 2, opacity: 0, y: -100 }}
+            transition={{ type: 'spring', duration: 0.6 }}
+            className="absolute top-[-20%] left-0 w-full h-full flex items-center justify-center z-40 pointer-events-none"
           >
-            <span className="font-display text-2xl md:text-3xl text-yellow-300 text-shadow-neon uppercase tracking-tighter transform -skew-y-6">
-              REKT!
+            <span className="font-display text-2xl md:text-3xl text-yellow-300 text-shadow-neon uppercase tracking-tighter transform -skew-y-6 text-center leading-tight drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)]">
+              {currentPhrase.current}
             </span>
           </motion.div>
         )}
