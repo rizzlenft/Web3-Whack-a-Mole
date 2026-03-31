@@ -1,13 +1,15 @@
 import React from 'react';
-import { useGameEngine } from '@/hooks/use-game-engine';
+import { useGameEngine, GameRound } from '@/hooks/use-game-engine';
 import { ArcadeCabinet } from '@/components/ArcadeCabinet';
 import { StartScreen } from './StartScreen';
 import { GameScreen } from './GameScreen';
 import { GameOverScreen } from './GameOverScreen';
+import { RoundTransitionScreen } from './RoundTransitionScreen';
 
 export function Home() {
   const { 
     status, 
+    round,
     score, 
     timeLeft, 
     moles, 
@@ -18,7 +20,6 @@ export function Home() {
   return (
     <div className="min-h-screen w-full flex items-center justify-center p-4 py-8 relative">
       
-      {/* Background Image Layer */}
       <div 
         className="fixed inset-0 z-[-1] opacity-40 object-cover w-full h-full pointer-events-none"
         style={{
@@ -38,8 +39,13 @@ export function Home() {
             score={score} 
             timeLeft={timeLeft} 
             moles={moles} 
-            onWhack={whackMole} 
+            onWhack={whackMole}
+            round={round}
           />
+        )}
+
+        {status === 'TRANSITIONING' && (
+          <RoundTransitionScreen nextRound={(round + 1) as GameRound} />
         )}
         
         {status === 'GAME_OVER' && (

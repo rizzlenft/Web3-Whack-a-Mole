@@ -23,8 +23,11 @@ interface MoleHoleProps {
   onWhack: (id: number) => void;
 }
 
+const PFP_IMAGES = ['placeholder-pfp.png', 'pfp-2.png'];
+
 export function MoleHole({ mole, onWhack }: MoleHoleProps) {
-  const pfpSrc = `${import.meta.env.BASE_URL}placeholder-pfp.png`;
+  const pfpFile = PFP_IMAGES[mole.pfp % PFP_IMAGES.length] ?? PFP_IMAGES[0];
+  const pfpSrc = `${import.meta.env.BASE_URL}${pfpFile}`;
   const [hitPhrase] = React.useState(() => getRandomPhrase());
   const currentPhrase = React.useRef(hitPhrase);
   
