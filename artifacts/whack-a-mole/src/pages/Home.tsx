@@ -12,7 +12,8 @@ export function Home() {
     round,
     score, 
     timeLeft, 
-    moles, 
+    moles,
+    flyingMoles,
     startGame, 
     whackMole 
   } = useGameEngine();
@@ -38,7 +39,8 @@ export function Home() {
           <GameScreen 
             score={score} 
             timeLeft={timeLeft} 
-            moles={moles} 
+            moles={moles}
+            flyingMoles={flyingMoles}
             onWhack={whackMole}
             round={round}
           />
