@@ -14,11 +14,11 @@ const DEGEN_PHRASES = [
   'SEND IT!', 'RIP BAGS', 'DOWN ONLY', 'SCAMMER!', 'GONNA ZERO',
 ];
 
+const PFP_IMAGES = ['placeholder-pfp.png', 'pfp-2.png'];
+
 function getRandomPhrase() {
   return DEGEN_PHRASES[Math.floor(Math.random() * DEGEN_PHRASES.length)];
 }
-
-const PFP_IMAGES = ['placeholder-pfp.png', 'pfp-2.png'];
 
 interface MoleHoleProps {
   mole: MoleState;
@@ -36,8 +36,7 @@ export function MoleHole({ mole, onWhack }: MoleHoleProps) {
     }
   }, [mole.active]);
 
-  // The in-hole mole is visible only when active and NOT jumping
-  const moleIsVisible = mole.active && !mole.whacked && !mole.jumping;
+  const visible = mole.active && !mole.whacked;
 
   return (
     <div className="relative w-16 h-16 sm:w-24 sm:h-24 md:w-32 md:h-32 mx-auto select-none mt-4">
@@ -53,39 +52,41 @@ export function MoleHole({ mole, onWhack }: MoleHoleProps) {
         {!mole.active && !mole.whacked && (
           <motion.div
             initial={{ opacity: 0 }}
-            animate={{ opacity: 0.5 }}
+            animate={{ opacity: 0.4 }}
             exit={{ opacity: 0 }}
-            className="absolute bottom-[20%] left-1/2 -translate-x-1/2 text-zinc-500 font-display text-sm animate-pulse z-0"
+            className="absolute bottom-[20%] left-1/2 -translate-x-1/2 text-zinc-600 font-display text-sm z-0"
           >
             ?
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* The mole in the hole — hidden when jumping (separate jump element handles that) */}
+      {/* Mole container with overflow-hidden to create the "emerging from hole" effect */}
       <div className="absolute bottom-[20%] left-[10%] w-[80%] h-[120%] overflow-hidden z-10 pointer-events-none">
         <motion.div
           initial={{ y: '100%' }}
           animate={{
-            y: moleIsVisible ? '0%' : '100%',
+            y: visible ? '0%' : '100%',
             scale: mole.whacked ? 0.8 : 1,
           }}
           transition={{
             type: 'spring',
-            stiffness: 400,
-            damping: 25,
-            mass: 1.5,
+            stiffness: 420,
+            damping: 26,
+            mass: 1.4,
           }}
           className="w-full h-full relative flex items-end justify-center"
         >
-          {moleIsVisible && (
+          {visible && (
             <div className="absolute bottom-0 w-3/4 h-4 bg-black/60 rounded-full blur-sm -z-10" />
           )}
 
           <div className={cn(
-            "w-[90%] aspect-square rounded-full border-4 shadow-[0_0_20px_rgba(255,0,0,0.8)] overflow-hidden bg-background relative pointer-events-auto",
-            moleIsVisible ? "border-destructive animate-[pulse_0.5s_infinite]" : "border-primary",
-            mole.whacked ? "brightness-50 contrast-150 sepia grayscale border-zinc-700 shadow-none" : ""
+            "w-[90%] aspect-square rounded-full border-4 overflow-hidden bg-background relative pointer-events-auto",
+            visible
+              ? "border-destructive shadow-[0_0_20px_rgba(255,0,0,0.7)] animate-[pulse_0.5s_infinite]"
+              : "border-primary shadow-[0_0_8px_rgba(255,0,255,0.3)]",
+            mole.whacked ? "brightness-50 grayscale border-zinc-700 shadow-none" : ""
           )}>
             <img
               src={pfpSrc}
@@ -107,36 +108,12 @@ export function MoleHole({ mole, onWhack }: MoleHoleProps) {
         </motion.div>
       </div>
 
-      {/* ── JUMP FLIGHT ELEMENT ──────────────────────────────────────────
-          Rendered OUTSIDE the overflow-hidden container so the mole can
-          visually fly up and out of the hole during a hop animation.      */}
-      <AnimatePresence>
-        {mole.jumping && !mole.whacked && (
-          <motion.div
-            className="absolute bottom-[40%] left-[10%] w-[80%] z-40 pointer-events-none"
-            initial={{ y: 0, scale: 1, rotate: 0, opacity: 1 }}
-            animate={{ y: '-220%', scale: 0.45, rotate: 30, opacity: 0 }}
-            exit={{}}
-            transition={{ duration: 0.28, ease: 'easeOut' }}
-          >
-            <div className="w-[90%] mx-auto aspect-square rounded-full border-4 border-primary overflow-hidden shadow-[0_0_14px_rgba(255,0,255,0.6)]">
-              <img
-                src={pfpSrc}
-                alt="Jumping scammer"
-                className="w-full h-full object-cover"
-                draggable={false}
-              />
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Front lip of hole for 3D effect */}
+      {/* Front lip of hole — 3D depth effect */}
       <div className="absolute bottom-[-10%] left-[-5%] w-[110%] h-[40%] bg-[url('/images/dirt-mound.png')] bg-cover bg-bottom rounded-t-[100%] rounded-b-[100%] z-20 pointer-events-none opacity-90 shadow-[0_-5px_15px_rgba(0,0,0,0.8)]" />
 
-      {/* Particle burst on pop-up */}
+      {/* Dirt burst particle on pop-up */}
       <AnimatePresence>
-        {mole.active && !mole.whacked && !mole.jumping && (
+        {visible && (
           <motion.div
             initial={{ opacity: 1, scale: 0.5 }}
             animate={{ opacity: 0, scale: 1.5 }}
@@ -163,7 +140,7 @@ export function MoleHole({ mole, onWhack }: MoleHoleProps) {
         )}
       </AnimatePresence>
 
-      {/* Click target — covers the whole hole area */}
+      {/* Invisible click target covering the whole hole */}
       <button
         className={cn(
           "absolute inset-0 z-30 w-full h-full rounded-full outline-none touch-manipulation",

@@ -15,7 +15,7 @@ interface GameScreenProps {
 
 const ROUND_LABELS: Record<GameRound, { label: string; color: string; emoji: string }> = {
   1: { label: 'BONK \'EM', color: 'text-accent', emoji: '🐀' },
-  2: { label: 'THEY\'RE HOPPING', color: 'text-secondary', emoji: '🏃' },
+  2: { label: 'POPCORN MODE', color: 'text-secondary', emoji: '🍿' },
   3: { label: '⚡ CHAOS ⚡', color: 'text-destructive', emoji: '💀' },
 };
 

@@ -4,7 +4,7 @@ import { GameRound } from '@/hooks/use-game-engine';
 
 const ROUND_INFO: Record<GameRound, { label: string; emoji: string; desc: string; color: string }> = {
   1: { label: 'ROUND 1', emoji: '🐀', desc: 'BONK THE SCAMMERS', color: 'text-primary' },
-  2: { label: 'ROUND 2', emoji: '🏃', desc: 'THEY\'RE HOPPING — POPUP + JUMP MODE', color: 'text-secondary' },
+  2: { label: 'ROUND 2', emoji: '🍿', desc: 'POPCORN MODE — MOLES BOUNCE BETWEEN HOLES', color: 'text-secondary' },
   3: { label: 'ROUND 3', emoji: '💀', desc: '⚡ CHAOS MODE — TOTAL RUG PULL ⚡', color: 'text-destructive' },
 };
 
@@ -71,7 +71,7 @@ export function RoundTransitionScreen({ nextRound }: RoundTransitionScreenProps)
 
         {nextRound === 2 && (
           <div className="mt-4 font-display text-sm text-secondary/70 uppercase tracking-wider border border-secondary/30 px-4 py-2 rounded">
-            📉 Some moles will JUMP between holes — watch for the arc
+            🍿 Moles pop up from one hole and drop into another — watch them bounce
           </div>
         )}
         {nextRound === 3 && (
