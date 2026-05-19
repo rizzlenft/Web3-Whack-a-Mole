@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { MoleHole } from '@/components/MoleHole';
 import { FlyingMole } from '@/components/FlyingMole';
 import { MoleState, FlyingMoleEntry, GameRound } from '@/hooks/use-game-engine';
@@ -26,8 +26,9 @@ export function GameScreen({ score, timeLeft, moles, flyingMoles, onWhack, round
   const [lastWhackTime, setLastWhackTime] = useState(0);
   const [chaosFlash, setChaosFlash] = useState(false);
 
-  // Refs for measuring hole positions
-  const gridRef = useRef<HTMLDivElement>(null);
+  // outerRef covers the whole game screen — flying moles are positioned within it
+  // so they can arc above the grid into the HUD area without being clipped
+  const outerRef = useRef<HTMLDivElement>(null);
   const holeRefs = useRef<(HTMLDivElement | null)[]>(Array(8).fill(null));
 
   const isChaoMode = round === 3;
@@ -51,20 +52,21 @@ export function GameScreen({ score, timeLeft, moles, flyingMoles, onWhack, round
     return () => clearInterval(id);
   }, [isChaoMode]);
 
-  // Get hole center in pixels relative to the grid container
+  // Measure hole center relative to the outer game screen container.
+  // Using the outer container (not just the grid) means arcs have full
+  // vertical room and won't get clipped by overflow-hidden.
   const getHoleCenter = (holeId: number): { x: number; y: number } => {
     const el = holeRefs.current[holeId];
-    const grid = gridRef.current;
-    if (!el || !grid) return { x: 0, y: 0 };
+    const outer = outerRef.current;
+    if (!el || !outer) return { x: 0, y: 0 };
     const elRect = el.getBoundingClientRect();
-    const gridRect = grid.getBoundingClientRect();
+    const outerRect = outer.getBoundingClientRect();
     return {
-      x: elRect.left - gridRect.left + elRect.width / 2,
-      y: elRect.top - gridRect.top + elRect.height / 2,
+      x: elRect.left - outerRect.left + elRect.width / 2,
+      y: elRect.top - outerRect.top + elRect.height / 2,
     };
   };
 
-  // Estimate flying mole diameter from the first hole's size
   const getFlySize = (): number => {
     const el = holeRefs.current[0];
     if (!el) return 48;
@@ -75,19 +77,18 @@ export function GameScreen({ score, timeLeft, moles, flyingMoles, onWhack, round
   const progressPercent = (timeLeft / (round === 3 ? 10 : 20)) * 100;
 
   return (
-    <div className={`w-full h-full min-h-[500px] flex flex-col p-2 md:p-4 game-bg relative overflow-hidden cursor-mallet`}>
-
-      {/* Chaos strobe overlay */}
+    <div
+      ref={outerRef}
+      className={`w-full h-full min-h-[500px] flex flex-col p-2 md:p-4 game-bg relative overflow-hidden cursor-mallet`}
+    >
+      {/* Chaos strobe */}
       {isChaoMode && (
-        <div
-          className={`absolute inset-0 pointer-events-none z-[60] transition-opacity duration-150 bg-destructive ${chaosFlash ? 'opacity-[0.08]' : 'opacity-0'}`}
-        />
+        <div className={`absolute inset-0 pointer-events-none z-[60] transition-opacity duration-150 bg-destructive ${chaosFlash ? 'opacity-[0.08]' : 'opacity-0'}`} />
       )}
 
       {/* HUD */}
       <div className="flex flex-col gap-1 mb-2 z-10">
         <div className={`flex justify-between items-center bg-card/90 px-3 py-2 border-4 rounded-sm ${isChaoMode ? 'border-destructive shadow-[0_0_20px_rgba(255,0,0,0.6)]' : 'border-primary box-shadow-neon'}`}>
-          {/* Score */}
           <div className="flex flex-col">
             <span className="text-secondary font-display text-xs mb-0.5 flex items-center gap-1">🪙 SCORE</span>
             <div className="relative">
@@ -109,7 +110,6 @@ export function GameScreen({ score, timeLeft, moles, flyingMoles, onWhack, round
             </div>
           </div>
 
-          {/* Round indicator */}
           <div className="flex flex-col items-center">
             <span className="font-display text-xs text-zinc-400 uppercase mb-0.5">ROUND</span>
             <div className={`font-display text-lg md:text-xl ${roundInfo.color} text-shadow-neon`}>{round} / 3</div>
@@ -118,7 +118,6 @@ export function GameScreen({ score, timeLeft, moles, flyingMoles, onWhack, round
             </div>
           </div>
 
-          {/* Timer */}
           <div className="flex flex-col items-end">
             <span className="text-secondary font-display text-xs flex items-center gap-1 mb-0.5">
               <Timer className="w-3 h-3" /> TIME
@@ -129,7 +128,6 @@ export function GameScreen({ score, timeLeft, moles, flyingMoles, onWhack, round
           </div>
         </div>
 
-        {/* Progress bar */}
         <div className="w-full h-2 bg-zinc-900 border border-zinc-700 rounded-full overflow-hidden">
           <div
             className={`h-full transition-all duration-1000 ease-linear ${timeLeft > 10 ? 'bg-accent' : timeLeft > 5 ? 'bg-yellow-400' : 'bg-destructive animate-pulse'}`}
@@ -143,40 +141,35 @@ export function GameScreen({ score, timeLeft, moles, flyingMoles, onWhack, round
         <GameLogo size="sm" />
       </div>
 
-      {/* Grid + flying moles overlay */}
+      {/* Mole Grid */}
       <div className="flex-1 flex items-center justify-center z-10">
-        {/* Relative container so flying moles can be positioned within it */}
-        <div className="relative w-full max-w-2xl" ref={gridRef}>
-          <div className="grid grid-cols-4 gap-2 sm:gap-4 md:gap-6">
-            {moles.map((mole, i) => (
-              <div
-                key={mole.id}
-                ref={el => { holeRefs.current[i] = el; }}
-              >
-                <MoleHole mole={mole} onWhack={handleWhack} />
-              </div>
-            ))}
-          </div>
-
-          {/* Flying moles rendered absolutely over the grid */}
-          {flyingMoles.map(fly => {
-            const src = getHoleCenter(fly.fromHole);
-            const dst = getHoleCenter(fly.toHole);
-            const sz = getFlySize();
-            return (
-              <FlyingMole
-                key={fly.id}
-                entry={fly}
-                srcX={src.x}
-                srcY={src.y}
-                dstX={dst.x}
-                dstY={dst.y}
-                size={sz}
-              />
-            );
-          })}
+        <div className="grid grid-cols-4 gap-2 sm:gap-4 md:gap-6 w-full max-w-2xl">
+          {moles.map((mole, i) => (
+            <div key={mole.id} ref={el => { holeRefs.current[i] = el; }}>
+              <MoleHole mole={mole} onWhack={handleWhack} />
+            </div>
+          ))}
         </div>
       </div>
+
+      {/* Flying moles — absolutely positioned within outerRef so they can
+          arc anywhere across the full arcade screen without clipping */}
+      {flyingMoles.map(fly => {
+        const src = getHoleCenter(fly.fromHole);
+        const dst = getHoleCenter(fly.toHole);
+        const sz = getFlySize();
+        return (
+          <FlyingMole
+            key={fly.id}
+            entry={fly}
+            srcX={src.x}
+            srcY={src.y}
+            dstX={dst.x}
+            dstY={dst.y}
+            size={sz}
+          />
+        );
+      })}
     </div>
   );
 }

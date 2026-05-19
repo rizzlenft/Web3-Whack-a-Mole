@@ -115,8 +115,8 @@ export function useGameEngine() {
     };
 
     // ── ROUND 2 mechanic: flying arc between holes ────────────────────
-    // Each "popcorn chain" manages one PFP that repeatedly pops up,
-    // then physically flies through the air to a random new hole.
+    // PFPs briefly pop from a hole, immediately fly in an arc to a random
+    // new hole, land, and repeat. Moles spend most of their time in the air.
     const startPopcornChain = (chainId: number) => {
       const doIteration = (hintHole: number = -1) => {
         if (!guard()) return;
@@ -127,10 +127,8 @@ export function useGameEngine() {
         setMoles(curr => {
           const inactive = curr.filter(m => !m.active);
           if (inactive.length === 0) return curr;
-          // Land at hintHole if it's available, otherwise random
           const preferred = hintHole !== -1 && !curr[hintHole]?.active
-            ? curr.find(m => m.id === hintHole) ?? null
-            : null;
+            ? curr.find(m => m.id === hintHole) ?? null : null;
           const target = preferred ?? inactive[Math.floor(Math.random() * inactive.length)];
           holeId = target.id;
           return curr.map(m => m.id === holeId
@@ -138,13 +136,15 @@ export function useGameEngine() {
         });
 
         if (holeId === -1) {
-          schedule(`pc_${chainId}_retry`, () => doIteration(), 120);
+          schedule(`pc_${chainId}_retry`, () => doIteration(), 100);
           return;
         }
 
         const p = getProgress();
-        const visMs = Math.max(600, 1600 - 900 * p);  // time sitting in hole
-        const flyMs = Math.max(500, 1050 - 450 * p);  // time flying through air
+        // Sit time is VERY short — just the spring pop animation.
+        // Moles barely emerge before launching into the air.
+        const sitMs = Math.max(220, 420 - 170 * p);
+        const flyMs = Math.max(520, 950 - 350 * p);
         const srcHole = holeId;
 
         schedule(`pc_${chainId}_sit`, () => {
@@ -159,8 +159,7 @@ export function useGameEngine() {
           });
 
           if (wasWhacked) {
-            // Whacked! Chain picks a fresh hole after a short pause
-            schedule(`pc_${chainId}_whacked`, () => doIteration(), 400);
+            schedule(`pc_${chainId}_whacked`, () => doIteration(), 250);
             return;
           }
 
@@ -173,13 +172,12 @@ export function useGameEngine() {
             { id: flyId, fromHole: srcHole, toHole: destHole, pfp, duration: flyMs },
           ]);
 
-          // After flying, land at destination and continue chain
           schedule(`pc_${chainId}_fly`, () => {
             if (!guard()) return;
             setFlyingMoles(curr => curr.filter(f => f.id !== flyId));
-            doIteration(destHole); // land here and sit again
+            doIteration(destHole);
           }, flyMs);
-        }, visMs);
+        }, sitMs);
       };
 
       doIteration();
@@ -192,12 +190,10 @@ export function useGameEngine() {
     }
 
     if (r === 2) {
-      // Start with 1 chain, add more over time
-      schedule('pc_start_0', () => startPopcornChain(0), 600);
-      schedule('pc_spawn_1', () => { if (guard()) startPopcornChain(1); },
-        config.duration * 1000 * 0.4);
-      schedule('pc_spawn_2', () => { if (guard()) startPopcornChain(2); },
-        config.duration * 1000 * 0.75);
+      // All 3 chains start immediately — board always has moles in motion
+      schedule('pc_start_0', () => startPopcornChain(0), 200);
+      schedule('pc_start_1', () => startPopcornChain(1), 500);
+      schedule('pc_start_2', () => startPopcornChain(2), 800);
     }
 
     if (r === 3) {
