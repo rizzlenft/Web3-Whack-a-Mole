@@ -84,8 +84,8 @@ export function MoleHole({ mole, onWhack }: MoleHoleProps) {
           <div className={cn(
             "w-[90%] aspect-square rounded-full border-4 overflow-hidden bg-background relative pointer-events-auto",
             visible
-              ? "border-destructive shadow-[0_0_20px_rgba(255,0,0,0.7)] animate-[pulse_0.5s_infinite]"
-              : "border-primary shadow-[0_0_8px_rgba(255,0,255,0.3)]",
+              ? "border-primary shadow-[0_0_22px_rgba(255,0,255,0.85),0_0_8px_rgba(0,255,255,0.5)] neon-border-pulse"
+              : "border-zinc-800 shadow-none",
             mole.whacked ? "brightness-50 grayscale border-zinc-700 shadow-none" : ""
           )}>
             <img
