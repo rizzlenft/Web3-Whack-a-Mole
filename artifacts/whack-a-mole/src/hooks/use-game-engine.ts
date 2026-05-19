@@ -1,13 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
-export type GameStatus = 'START' | 'PLAYING' | 'TRANSITIONING' | 'GAME_OVER';
+export type GameStatus = 'START' | 'COUNTDOWN' | 'PLAYING' | 'TRANSITIONING' | 'GAME_OVER';
 export type GameRound = 1 | 2 | 3;
+export type MoleType = 'normal' | 'golden' | 'skull';
 
 export type MoleState = {
   id: number;
   active: boolean;
   whacked: boolean;
   pfp: number;
+  moleType: MoleType;
 };
 
 export type FlyingMoleEntry = {
@@ -21,6 +23,7 @@ export type FlyingMoleEntry = {
 const TOTAL_HOLES = 8;
 export const PFP_COUNT = 2;
 const TRANSITION_MS = 3000;
+export const MOLE_POINTS: Record<MoleType, number> = { normal: 1, golden: 5, skull: -1 };
 
 const ROUND_CONFIG: Record<GameRound, { duration: number }> = {
   1: { duration: 20 },
@@ -30,8 +33,15 @@ const ROUND_CONFIG: Record<GameRound, { duration: number }> = {
 
 const freshMoles = (): MoleState[] =>
   Array.from({ length: TOTAL_HOLES }, (_, i) => ({
-    id: i, active: false, whacked: false, pfp: 0,
+    id: i, active: false, whacked: false, pfp: 0, moleType: 'normal',
   }));
+
+function pickMoleType(): MoleType {
+  const r = Math.random();
+  if (r < 0.06) return 'golden'; // 6% golden
+  if (r < 0.12) return 'skull';  // 6% skull
+  return 'normal';
+}
 
 export function useGameEngine() {
   const [status, setStatus] = useState<GameStatus>('START');
@@ -54,9 +64,6 @@ export function useGameEngine() {
     timerRef.current = null;
   }, []);
 
-  // Named-key scheduler — cancels any prior timer with the same key.
-  // IMPORTANT: schedule() can safely be called from inside setMoles updaters
-  // because it only touches timeoutsRef (no React state).
   const scheduleRef = useRef((key: string, fn: () => void, delay: number) => {
     const prev = timeoutsRef.current.get(key);
     if (prev) clearTimeout(prev);
@@ -86,8 +93,6 @@ export function useGameEngine() {
     const guard = () => statusRef.current === 'PLAYING' && roundRef.current === r;
 
     // ── Round 1: classic popup-and-stay ──────────────────────────────
-    // Holes are picked and stay active until the hide timer fires.
-    // The schedule call is INSIDE the updater so holeId is captured reliably.
     const runPopupLoop = (loopKey: string) => {
       if (!guard()) return;
       const p = getProgress();
@@ -104,15 +109,16 @@ export function useGameEngine() {
           const idx = Math.floor(Math.random() * pool.length);
           const hole = pool.splice(idx, 1)[0];
           const pfp = Math.floor(Math.random() * PFP_COUNT);
+          const moleType = pickMoleType();
+          const holeDuration = moleType === 'golden' ? Math.min(duration, 900) : duration;
           next = next.map(m => m.id === hole.id
-            ? { ...m, active: true, whacked: false, pfp } : m);
+            ? { ...m, active: true, whacked: false, pfp, moleType } : m);
           const hid = hole.id;
-          // Schedule hide timer INSIDE updater — avoids React batching race.
           sched(`popup_${hid}`, () => {
             if (!guard()) return;
             setMoles(c => c.map(m => m.id === hid
               ? { ...m, active: false, whacked: false } : m));
-          }, duration);
+          }, holeDuration);
         }
         return next;
       });
@@ -121,23 +127,17 @@ export function useGameEngine() {
     };
 
     // ── Round 2: arc-flying popcorn chains ───────────────────────────
-    // Each chain: mole briefly pops up from a hole, launches into an arc,
-    // lands at a random destination, pops up again, and repeats.
-    // The sit-timer is scheduled INSIDE the setMoles updater so it always
-    // has the correct holeId regardless of React's async batching.
     const startPopcornChain = (chainId: number) => {
       const doIteration = (hintHole: number = -1) => {
         if (!guard()) return;
         const pfp = Math.floor(Math.random() * PFP_COUNT);
         const p = getProgress();
-        // Very short sit: moles barely pop up before launching.
         const sitMs = Math.max(200, 380 - 150 * p);
         const flyMs = Math.max(520, 950 - 350 * p);
 
         setMoles(curr => {
           const inactive = curr.filter(m => !m.active);
           if (inactive.length === 0) {
-            // Every hole occupied — retry soon
             sched(`pc_${chainId}_retry`, () => doIteration(), 120);
             return curr;
           }
@@ -145,21 +145,16 @@ export function useGameEngine() {
             ? curr.find(m => m.id === hintHole) ?? null : null;
           const target = preferred ?? inactive[Math.floor(Math.random() * inactive.length)];
           const holeId = target.id;
+          const moleType = pickMoleType();
 
-          // Schedule sit → launch sequence INSIDE the updater.
-          // This is a side-effect inside an updater (intentional; schedule()
-          // only touches a ref, not React state, so it's safe).
           sched(`pc_${chainId}_sit`, () => {
             if (!guard()) return;
-            // Deactivate hole (unless whacked, which already handled score).
             setMoles(inner => {
               const m = inner.find(m => m.id === holeId);
               if (!m || m.whacked) {
-                // Was whacked — continue chain from a fresh hole
                 sched(`pc_${chainId}_afterwhack`, () => doIteration(), 200);
                 return inner;
               }
-              // Not whacked — launch flying mole
               const destHole = Math.floor(Math.random() * TOTAL_HOLES);
               const flyId = `fly_${chainId}_${Date.now()}`;
               setFlyingMoles(fms => [
@@ -177,14 +172,14 @@ export function useGameEngine() {
           }, sitMs);
 
           return curr.map(m => m.id === holeId
-            ? { ...m, active: true, whacked: false, pfp } : m);
+            ? { ...m, active: true, whacked: false, pfp, moleType } : m);
         });
       };
 
       doIteration();
     };
 
-    // ── Round 3: chaos — popup loop + popcorn arcs simultaneously ────
+    // ── Round 3: chaos ────────────────────────────────────────────────
     const runChaosPopup = (loopKey: string) => {
       if (!guard()) return;
       const p = getProgress();
@@ -201,8 +196,9 @@ export function useGameEngine() {
           const idx = Math.floor(Math.random() * pool.length);
           const hole = pool.splice(idx, 1)[0];
           const pfp = Math.floor(Math.random() * PFP_COUNT);
+          const moleType = pickMoleType();
           next = next.map(m => m.id === hole.id
-            ? { ...m, active: true, whacked: false, pfp } : m);
+            ? { ...m, active: true, whacked: false, pfp, moleType } : m);
           const hid = hole.id;
           sched(`chaos_popup_${hid}`, () => {
             if (!guard()) return;
@@ -234,6 +230,7 @@ export function useGameEngine() {
             ? curr.find(m => m.id === hintHole) ?? null : null;
           const target = preferred ?? inactive[Math.floor(Math.random() * inactive.length)];
           const holeId = target.id;
+          const moleType = pickMoleType();
 
           sched(`cpc_${chainId}_sit`, () => {
             if (!guard()) return;
@@ -260,25 +257,22 @@ export function useGameEngine() {
           }, sitMs);
 
           return curr.map(m => m.id === holeId
-            ? { ...m, active: true, whacked: false, pfp } : m);
+            ? { ...m, active: true, whacked: false, pfp, moleType } : m);
         });
       };
 
       doIteration();
     };
 
-    // ── Start the round ───────────────────────────────────────────────
+    // ── Start the round ────────────────────────────────────────────────
     if (r === 1) {
-      sched('popup_loop', () => runPopupLoop('popup_loop'), 800);
+      sched('popup_loop', () => runPopupLoop('popup_loop'), 600);
     }
-
     if (r === 2) {
-      // 3 flying chains all start right away
       sched('pc_start_0', () => startPopcornChain(0), 200);
       sched('pc_start_1', () => startPopcornChain(1), 500);
       sched('pc_start_2', () => startPopcornChain(2), 800);
     }
-
     if (r === 3) {
       sched('chaos_popup_loop', () => runChaosPopup('chaos_popup_loop'), 300);
       sched('cpc_start_10', () => startChaosPopcorn(10), 450);
@@ -317,20 +311,20 @@ export function useGameEngine() {
 
   const startGame = useCallback(() => {
     setScore(0);
-    beginRound(1);
-  }, [beginRound]);
+    setStatus('COUNTDOWN');
+    statusRef.current = 'COUNTDOWN';
+  }, []);
 
   const whackMole = useCallback((id: number) => {
     setMoles(prev => {
       const mole = prev.find(m => m.id === id);
       if (!mole || !mole.active || mole.whacked) return prev;
-      setScore(s => s + 1);
-      // Cancel any pending hide timer for this hole
+      const pts = MOLE_POINTS[mole.moleType];
+      setScore(s => Math.max(0, s + pts));
       const t1 = timeoutsRef.current.get(`popup_${id}`);
       if (t1) clearTimeout(t1);
       const t2 = timeoutsRef.current.get(`chaos_popup_${id}`);
       if (t2) clearTimeout(t2);
-      // Brief delay before disappearing (whacked animation)
       const t = setTimeout(() => {
         setMoles(c => c.map(m => m.id === id
           ? { ...m, active: false, whacked: false } : m));
@@ -340,7 +334,12 @@ export function useGameEngine() {
     });
   }, []);
 
+  // Countdown → begin round 1
+  const onCountdownDone = useCallback(() => {
+    beginRound(1);
+  }, [beginRound]);
+
   useEffect(() => { return () => stopAllTimers(); }, [stopAllTimers]);
 
-  return { status, round, score, timeLeft, moles, flyingMoles, startGame, whackMole };
+  return { status, round, score, timeLeft, moles, flyingMoles, startGame, whackMole, onCountdownDone };
 }

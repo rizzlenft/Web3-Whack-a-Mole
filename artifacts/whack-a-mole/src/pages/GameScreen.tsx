@@ -1,7 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { MoleHole } from '@/components/MoleHole';
 import { FlyingMole } from '@/components/FlyingMole';
-import { MoleState, FlyingMoleEntry, GameRound } from '@/hooks/use-game-engine';
+import { FloatingScore, FloatingScoreEntry } from '@/components/FloatingScore';
+import { MoleState, FlyingMoleEntry, GameRound, MoleType, MOLE_POINTS } from '@/hooks/use-game-engine';
+import { useSound } from '@/hooks/use-sound';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface GameScreenProps {
@@ -14,21 +16,26 @@ interface GameScreenProps {
 }
 
 const ROUND_CONFIG: Record<GameRound, { label: string; sub: string; color: string; border: string; duration: number }> = {
-  1: { label: 'ROUND 1', sub: 'BONK EM',   color: 'text-primary',     border: 'border-primary',     duration: 20 },
-  2: { label: 'ROUND 2', sub: 'THEY FLY',  color: 'text-secondary',   border: 'border-secondary',   duration: 20 },
-  3: { label: '⚡ CHAOS', sub: 'NO MERCY',  color: 'text-destructive', border: 'border-destructive', duration: 10 },
+  1: { label: 'ROUND 1', sub: 'BONK EM',  color: 'text-primary',     border: 'border-primary',     duration: 20 },
+  2: { label: 'ROUND 2', sub: 'THEY FLY', color: 'text-secondary',   border: 'border-secondary',   duration: 20 },
+  3: { label: '⚡ CHAOS', sub: 'NO MERCY', color: 'text-destructive', border: 'border-destructive', duration: 10 },
 };
 
 export function GameScreen({ score, timeLeft, moles, flyingMoles, onWhack, round }: GameScreenProps) {
-  const [combo, setCombo]             = useState(0);
-  const [lastWhackTime, setLWT]       = useState(0);
-  const [prevScore, setPrevScore]     = useState(score);
-  const [scorePop, setScorePop]       = useState(false);
-  const [whackFlash, setWhackFlash]   = useState(false);
-  const [chaosFlash, setChaosFlash]   = useState(false);
+  const [combo, setCombo]           = useState(0);
+  const [lastWhackTime, setLWT]     = useState(0);
+  const [prevScore, setPrevScore]   = useState(score);
+  const [scorePop, setScorePop]     = useState(false);
+  const [whackFlash, setWhackFlash] = useState(false);
+  const [shake, setShake]           = useState(false);
+  const [chaosFlash, setChaosFlash] = useState(false);
+  const [floats, setFloats]         = useState<FloatingScoreEntry[]>([]);
 
-  const outerRef  = useRef<HTMLDivElement>(null);
-  const holeRefs  = useRef<(HTMLDivElement | null)[]>(Array(8).fill(null));
+  const outerRef = useRef<HTMLDivElement>(null);
+  const holeRefs = useRef<(HTMLDivElement | null)[]>(Array(8).fill(null));
+  const prevTimeRef = useRef(timeLeft);
+
+  const snd = useSound();
 
   const cfg        = ROUND_CONFIG[round];
   const isChaos    = round === 3;
@@ -47,6 +54,14 @@ export function GameScreen({ score, timeLeft, moles, flyingMoles, onWhack, round
     return () => clearTimeout(t);
   }, [score, prevScore]);
 
+  // Timer tick sound when critical
+  useEffect(() => {
+    if (isCritical && prevTimeRef.current !== timeLeft) {
+      snd.timerTick();
+    }
+    prevTimeRef.current = timeLeft;
+  }, [timeLeft, isCritical, snd]);
+
   // Combo reset
   useEffect(() => {
     const t = setTimeout(() => setCombo(0), 1100);
@@ -60,38 +75,89 @@ export function GameScreen({ score, timeLeft, moles, flyingMoles, onWhack, round
     return () => clearInterval(id);
   }, [isChaos]);
 
-  const handleWhack = useCallback((id: number) => {
-    const now = Date.now();
-    setCombo(c => now - lastWhackTime < 900 ? c + 1 : 1);
-    setLWT(now);
-    setWhackFlash(true);
-    setTimeout(() => setWhackFlash(false), 80);
-    onWhack(id);
-  }, [lastWhackTime, onWhack]);
+  // Remove floats after animation
+  useEffect(() => {
+    if (floats.length === 0) return;
+    const t = setTimeout(() => setFloats(f => f.slice(1)), 900);
+    return () => clearTimeout(t);
+  }, [floats]);
 
-  const getHoleCenter = (holeId: number) => {
+  const getHoleCenter = useCallback((holeId: number) => {
     const el = holeRefs.current[holeId];
     const outer = outerRef.current;
     if (!el || !outer) return { x: 0, y: 0 };
     const er = el.getBoundingClientRect();
     const or = outer.getBoundingClientRect();
-    return { x: er.left - or.left + er.width / 2, y: er.top - or.top + er.height / 2 };
-  };
+    return { x: er.left - or.left + er.width / 2, y: er.top - or.top + er.height * 0.3 };
+  }, []);
 
   const getFlySize = () => {
     const el = holeRefs.current[0];
     return el ? el.getBoundingClientRect().width * 0.8 : 48;
   };
 
+  const handleWhack = useCallback((id: number) => {
+    const mole = moles.find(m => m.id === id);
+    if (!mole || !mole.active || mole.whacked) return;
+
+    const now = Date.now();
+    const newCombo = now - lastWhackTime < 900 ? combo + 1 : 1;
+    setCombo(newCombo);
+    setLWT(now);
+
+    // Flash & shake
+    setWhackFlash(true);
+    setTimeout(() => setWhackFlash(false), 80);
+    setShake(true);
+    setTimeout(() => setShake(false), 350);
+
+    // Sounds
+    if (mole.moleType === 'golden') {
+      snd.goldenBonk();
+    } else {
+      snd.bonk();
+      if (newCombo > 1) snd.combo(newCombo);
+    }
+
+    // Floating score
+    const pts = MOLE_POINTS[mole.moleType];
+    const center = getHoleCenter(id);
+    const label = mole.moleType === 'golden' ? '+5 👑' : mole.moleType === 'skull' ? '-1 💀' : newCombo >= 3 ? `+1 ×${newCombo}🔥` : undefined;
+    setFloats(f => [
+      ...f,
+      { id: `${id}_${now}`, x: center.x, y: center.y, value: pts, label },
+    ]);
+
+    onWhack(id);
+  }, [moles, combo, lastWhackTime, onWhack, snd, getHoleCenter]);
+
+  // Mole pop sound — fire when a mole becomes newly active
+  const prevMolesRef = useRef(moles);
+  useEffect(() => {
+    const prev = prevMolesRef.current;
+    moles.forEach((m, i) => {
+      if (m.active && !prev[i]?.active) snd.molePop();
+    });
+    prevMolesRef.current = moles;
+  }, [moles, snd]);
+
+  // Flying mole whoosh
+  const prevFlyRef = useRef(flyingMoles);
+  useEffect(() => {
+    const prevIds = new Set(prevFlyRef.current.map(f => f.id));
+    flyingMoles.forEach(f => {
+      if (!prevIds.has(f.id)) snd.flyWhoosh();
+    });
+    prevFlyRef.current = flyingMoles;
+  }, [flyingMoles, snd]);
+
   return (
     <div
       ref={outerRef}
-      className="w-full h-full flex flex-col game-bg relative overflow-hidden cursor-mallet select-none"
+      className={`w-full h-full flex flex-col game-bg relative overflow-hidden cursor-mallet select-none ${shake ? 'animate-shake' : ''}`}
     >
       {/* Whack flash */}
-      {whackFlash && (
-        <div className="absolute inset-0 z-[70] pointer-events-none bg-white opacity-20" />
-      )}
+      {whackFlash && <div className="absolute inset-0 z-[70] pointer-events-none bg-white opacity-[0.18]" />}
       {/* Chaos strobe */}
       {isChaos && (
         <div className={`absolute inset-0 z-[65] pointer-events-none bg-destructive transition-opacity duration-150 ${chaosFlash ? 'opacity-[0.08]' : 'opacity-0'}`} />
@@ -99,8 +165,6 @@ export function GameScreen({ score, timeLeft, moles, flyingMoles, onWhack, round
 
       {/* ── HUD ──────────────────────────────────────────── */}
       <div className={`flex-shrink-0 ${cfg.border} border-b-4 bg-black/85 px-3 pt-2 pb-1.5 z-20`}>
-
-        {/* Row: score | round+combo | timer */}
         <div className="flex items-center justify-between gap-2">
 
           {/* Score */}
@@ -108,7 +172,7 @@ export function GameScreen({ score, timeLeft, moles, flyingMoles, onWhack, round
             <span className="font-display text-[7px] text-secondary/70 tracking-widest leading-none mb-0.5">SCORE</span>
             <motion.span
               key={score}
-              animate={scorePop ? { scale: [1, 1.35, 1] } : {}}
+              animate={scorePop ? { scale: [1, 1.4, 1] } : {}}
               transition={{ duration: 0.22 }}
               className={`font-sans text-3xl font-bold tracking-widest leading-none ${isChaos ? 'text-destructive' : 'text-primary'} drop-shadow-[0_0_8px_currentColor]`}
             >
@@ -116,7 +180,7 @@ export function GameScreen({ score, timeLeft, moles, flyingMoles, onWhack, round
             </motion.span>
           </div>
 
-          {/* Centre */}
+          {/* Centre: round + combo */}
           <div className="flex flex-col items-center flex-1">
             <span className={`font-display text-[9px] ${cfg.color} tracking-widest leading-none`}>{cfg.label}</span>
             <span className={`font-display text-[7px] ${cfg.color} opacity-60 tracking-widest leading-none mt-0.5`}>{cfg.sub}</span>
@@ -128,7 +192,7 @@ export function GameScreen({ score, timeLeft, moles, flyingMoles, onWhack, round
                   exit={{ scale: 0, opacity: 0 }}
                   className="font-display text-[8px] text-accent drop-shadow-[0_0_4px_hsl(140,100%,55%)] mt-0.5 whitespace-nowrap"
                 >
-                  ×{combo} COMBO!
+                  ×{combo} COMBO!{combo >= 5 ? '🔥' : ''}
                 </motion.span>
               )}
             </AnimatePresence>
@@ -146,7 +210,6 @@ export function GameScreen({ score, timeLeft, moles, flyingMoles, onWhack, round
               {timeLeft.toString().padStart(2, '0')}
             </motion.span>
           </div>
-
         </div>
 
         {/* Timer bar */}
@@ -184,6 +247,9 @@ export function GameScreen({ score, timeLeft, moles, flyingMoles, onWhack, round
           />
         );
       })}
+
+      {/* ── Floating score popups ─────────────────────────── */}
+      <FloatingScore entries={floats} />
     </div>
   );
 }
