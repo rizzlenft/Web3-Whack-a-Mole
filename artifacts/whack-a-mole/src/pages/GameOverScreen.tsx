@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Button } from '@/components/Button';
 import { useSubmitScore } from '@workspace/api-client-react';
 import confetti from 'canvas-confetti';
-import { RotateCcw, Trophy, CheckCircle2 } from 'lucide-react';
+import { RotateCcw, Trophy, CheckCircle2, Zap } from 'lucide-react';
 import { Link } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -12,21 +11,21 @@ interface GameOverScreenProps {
   onRestart: () => void;
 }
 
-function getFlavorText(score: number) {
-  if (score === 0) return { text: "ZERO. ABSOLUTE ZERO. 💀", color: "text-destructive" };
-  if (score <= 5) return { text: "NGMI. DOWN ONLY FOR YOU. 📉", color: "text-destructive" };
-  if (score <= 12) return { text: "MID AT BEST. PROBABLY REKT. 🫡", color: "text-yellow-400" };
-  if (score <= 20) return { text: "RESPECTABLE. WAGMI MAYBE. 📈", color: "text-accent" };
-  if (score <= 30) return { text: "BULLISH. ACTUAL ALPHA. 🔥", color: "text-primary" };
-  return { text: "LEGENDARY CHAD DETECTED. 👑", color: "text-secondary" };
+function getFlavorText(s: number): { text: string; color: string } {
+  if (s === 0)  return { text: 'ZERO. ABSOLUTE ZERO. 💀',           color: 'text-destructive' };
+  if (s <= 5)   return { text: 'NGMI. DOWN ONLY FOR YOU. 📉',        color: 'text-destructive' };
+  if (s <= 12)  return { text: 'MID AT BEST. PROBABLY REKT. 🫡',     color: 'text-yellow-400' };
+  if (s <= 20)  return { text: 'RESPECTABLE. WAGMI MAYBE. 📈',        color: 'text-accent' };
+  if (s <= 30)  return { text: 'BULLISH. ACTUAL ALPHA. 🔥',           color: 'text-primary' };
+  return          { text: 'LEGENDARY CHAD DETECTED. 👑',              color: 'text-secondary' };
 }
 
-const GAME_LETTERS = ['G', 'A', 'M', 'E'];
-const OVER_LETTERS = ['O', 'V', 'E', 'R'];
+const G = ['G','A','M','E'];
+const O = ['O','V','E','R'];
 
 export function GameOverScreen({ score, onRestart }: GameOverScreenProps) {
   const [playerName, setPlayerName] = useState('');
-  const [submitted, setSubmitted] = useState(false);
+  const [submitted, setSubmitted]   = useState(false);
   const queryClient = useQueryClient();
   const flavor = getFlavorText(score);
 
@@ -40,13 +39,13 @@ export function GameOverScreen({ score, onRestart }: GameOverScreenProps) {
   });
 
   useEffect(() => {
-    const end = Date.now() + 2800;
-    const frame = () => {
-      confetti({ particleCount: 4, angle: 60, spread: 60, origin: { x: 0 }, colors: ['#ff00ff', '#00ffff', '#39ff14'] });
-      confetti({ particleCount: 4, angle: 120, spread: 60, origin: { x: 1 }, colors: ['#ff00ff', '#00ffff', '#39ff14'] });
-      if (Date.now() < end) requestAnimationFrame(frame);
+    const end = Date.now() + 2600;
+    const burst = () => {
+      confetti({ particleCount: 4, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#ff00ff','#00ffff','#39ff14'] });
+      confetti({ particleCount: 4, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#ff00ff','#00ffff','#39ff14'] });
+      if (Date.now() < end) requestAnimationFrame(burst);
     };
-    const t = setTimeout(frame, 200);
+    const t = setTimeout(burst, 180);
     return () => clearTimeout(t);
   }, []);
 
@@ -57,90 +56,74 @@ export function GameOverScreen({ score, onRestart }: GameOverScreenProps) {
   };
 
   return (
-    <div className="w-full h-full min-h-[600px] flex flex-col items-center justify-center p-5 text-center relative game-bg overflow-hidden">
+    <div className="w-full h-full flex flex-col items-center justify-center gap-3 px-5 py-4 text-center relative game-bg overflow-hidden">
 
-      {/* Scanline overlay tint */}
-      <div className="absolute inset-0 bg-black/40 pointer-events-none" />
+      {/* Dark overlay */}
+      <div className="absolute inset-0 bg-black/50 pointer-events-none" />
 
-      {/* GAME OVER letters */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="relative z-10 mb-3"
-      >
+      {/* ── GAME OVER heading ──────────────────────────── */}
+      <div className="relative z-10 flex flex-col items-center gap-0.5">
         <div className="flex justify-center gap-1 md:gap-2">
-          {GAME_LETTERS.map((l, i) => (
-            <motion.span
-              key={`g${i}`}
-              initial={{ y: -60, opacity: 0, rotate: -20 }}
+          {G.map((l, i) => (
+            <motion.span key={`g${i}`}
+              initial={{ y: -50, opacity: 0, rotate: -15 }}
               animate={{ y: 0, opacity: 1, rotate: 0 }}
-              transition={{ type: 'spring', bounce: 0.55, delay: i * 0.07 }}
-              className="font-display text-4xl md:text-6xl text-destructive"
-              style={{ textShadow: '3px 3px 0 #ff00ff, -3px -3px 0 #00ffff' }}
-            >
-              {l}
-            </motion.span>
+              transition={{ type: 'spring', bounce: 0.55, delay: i * 0.06 }}
+              className="font-display text-4xl md:text-5xl text-destructive"
+              style={{ textShadow: '3px 3px 0 #ff00ff, -2px -2px 0 #00ffff' }}
+            >{l}</motion.span>
           ))}
         </div>
-        <div className="flex justify-center gap-1 md:gap-2 mt-1">
-          {OVER_LETTERS.map((l, i) => (
-            <motion.span
-              key={`o${i}`}
-              initial={{ y: 60, opacity: 0, rotate: 20 }}
+        <div className="flex justify-center gap-1 md:gap-2">
+          {O.map((l, i) => (
+            <motion.span key={`o${i}`}
+              initial={{ y: 50, opacity: 0, rotate: 15 }}
               animate={{ y: 0, opacity: 1, rotate: 0 }}
-              transition={{ type: 'spring', bounce: 0.55, delay: 0.28 + i * 0.07 }}
-              className="font-display text-4xl md:text-6xl text-destructive"
-              style={{ textShadow: '3px 3px 0 #ff00ff, -3px -3px 0 #00ffff' }}
-            >
-              {l}
-            </motion.span>
+              transition={{ type: 'spring', bounce: 0.55, delay: 0.24 + i * 0.06 }}
+              className="font-display text-4xl md:text-5xl text-destructive"
+              style={{ textShadow: '3px 3px 0 #ff00ff, -2px -2px 0 #00ffff' }}
+            >{l}</motion.span>
           ))}
         </div>
-      </motion.div>
+      </div>
 
-      {/* Score */}
+      {/* ── Score + flavor ─────────────────────────────── */}
       <motion.div
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        transition={{ type: 'spring', bounce: 0.6, delay: 0.6 }}
-        className="relative z-10 mb-2"
+        transition={{ type: 'spring', bounce: 0.65, delay: 0.55 }}
+        className="relative z-10 flex flex-col items-center gap-1"
       >
-        <div className="bg-black/70 border-4 border-primary rounded px-6 py-3 box-shadow-neon inline-block">
-          <span className="font-display text-xs text-secondary tracking-widest block mb-1">FINAL SCORE</span>
-          <span className="font-sans text-5xl md:text-7xl text-primary text-shadow-neon font-bold tracking-widest">
+        <div className="bg-black/80 border-4 border-primary rounded px-8 py-3 box-shadow-neon">
+          <span className="font-display text-[9px] text-secondary tracking-widest block mb-1">FINAL SCORE</span>
+          <span className="font-sans text-5xl md:text-6xl text-primary font-bold tracking-widest"
+            style={{ textShadow: '0 0 10px hsl(315,100%,60%), 0 0 30px hsl(315,100%,60%)' }}
+          >
             {score.toString().padStart(4, '0')}
           </span>
         </div>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.85 }}
+          className={`font-sans text-base md:text-lg ${flavor.color} uppercase tracking-widest animate-pulse`}
+        >
+          {flavor.text}
+        </motion.p>
       </motion.div>
 
-      {/* Flavor text */}
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.9 }}
-        className={`relative z-10 font-sans text-lg md:text-xl ${flavor.color} uppercase tracking-widest animate-pulse mb-4`}
-      >
-        {flavor.text}
-      </motion.p>
-
-      {/* Submit form */}
+      {/* ── Submit form ────────────────────────────────── */}
       <motion.div
-        initial={{ y: 30, opacity: 0 }}
+        initial={{ y: 24, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.75 }}
-        className="relative z-10 w-full max-w-sm bg-black/80 border-4 border-secondary rounded box-shadow-cyan p-5 mb-4"
+        transition={{ delay: 0.7 }}
+        className="relative z-10 w-full max-w-xs bg-black/85 border-4 border-secondary rounded box-shadow-cyan p-4"
       >
         <AnimatePresence mode="wait">
           {!submitted ? (
-            <motion.form
-              key="form"
-              initial={{ opacity: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              onSubmit={handleSubmit}
-              className="flex flex-col gap-4"
-            >
-              <label className="font-display text-secondary text-xs tracking-widest">
-                ENTER YOUR NAME TO CLAIM GLORY
+            <motion.form key="form" exit={{ opacity: 0, scale: 0.92 }} onSubmit={handleSubmit} className="flex flex-col gap-3">
+              <label className="font-display text-secondary text-[9px] tracking-widest">
+                ENTER NAME TO CLAIM GLORY
               </label>
               <input
                 type="text"
@@ -148,51 +131,60 @@ export function GameOverScreen({ score, onRestart }: GameOverScreenProps) {
                 value={playerName}
                 onChange={e => setPlayerName(e.target.value.toUpperCase())}
                 placeholder="YOUR_NAME"
-                className="bg-zinc-950 border-b-4 border-primary text-primary font-display text-xl md:text-2xl p-3 text-center focus:outline-none focus:border-secondary transition-colors placeholder:text-zinc-700 uppercase tracking-widest w-full"
+                className="bg-zinc-950 border-b-4 border-primary text-primary font-display text-xl p-2.5 text-center focus:outline-none focus:border-secondary transition-colors placeholder:text-zinc-700 uppercase tracking-widest w-full"
                 required
                 autoFocus
               />
-              <Button
+              <motion.button
                 type="submit"
                 disabled={isPending || !playerName.trim()}
-                variant="primary"
-                className="w-full text-base"
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.96 }}
+                className="w-full py-3 font-display text-xs tracking-widest text-black bg-primary rounded flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed neon-border-pulse"
               >
-                {isPending ? '⏳ SAVING...' : '⚡ SUBMIT SCORE'}
-              </Button>
+                <Zap className="w-4 h-4" />
+                {isPending ? 'SAVING...' : 'SUBMIT SCORE'}
+              </motion.button>
             </motion.form>
           ) : (
             <motion.div
               key="done"
-              initial={{ opacity: 0, scale: 0.8 }}
+              initial={{ opacity: 0, scale: 0.85 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ type: 'spring', bounce: 0.5 }}
-              className="flex flex-col items-center gap-3 py-4 text-accent"
+              className="flex flex-col items-center gap-2 py-3 text-accent"
             >
-              <CheckCircle2 className="w-14 h-14 animate-bounce drop-shadow-[0_0_10px_currentColor]" />
-              <span className="font-display text-sm text-shadow-green">SCORE RECORDED!</span>
-              <span className="font-sans text-base text-zinc-400">You're on the board, ser 🫡</span>
+              <CheckCircle2 className="w-12 h-12 animate-bounce drop-shadow-[0_0_10px_currentColor]" />
+              <span className="font-display text-xs text-shadow-green">SCORE RECORDED!</span>
+              <span className="font-sans text-sm text-zinc-400">You're on the board, ser 🫡</span>
             </motion.div>
           )}
         </AnimatePresence>
       </motion.div>
 
-      {/* Action buttons */}
+      {/* ── Action buttons ──────────────────────────────── */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 1 }}
-        className="flex gap-3 w-full max-w-sm z-10"
+        transition={{ delay: 1.0 }}
+        className="flex gap-3 w-full max-w-xs z-10"
       >
-        <Button variant="secondary" onClick={onRestart} className="flex-1 flex items-center justify-center gap-2">
-          <RotateCcw className="w-4 h-4" />
+        <motion.button
+          onClick={onRestart}
+          whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.95 }}
+          className="flex-1 py-2.5 font-display text-[10px] text-secondary-foreground bg-secondary tracking-widest flex items-center justify-center gap-1.5 rounded border-b-4 border-secondary/50 box-shadow-cyan"
+        >
+          <RotateCcw className="w-3.5 h-3.5" />
           RETRY
-        </Button>
+        </motion.button>
         <Link href="/leaderboard" className="flex-1">
-          <Button variant="ghost" className="w-full flex items-center justify-center gap-2 border-2 border-primary/40 text-primary hover:border-primary">
-            <Trophy className="w-4 h-4" />
-            RANKS
-          </Button>
+          <motion.button
+            whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.95 }}
+            className="w-full py-2.5 font-display text-[10px] text-primary border-2 border-primary/50 tracking-widest flex items-center justify-center gap-1.5 rounded hover:border-primary hover:bg-primary/10 transition-colors"
+          >
+            <Trophy className="w-3.5 h-3.5" />
+            LEADERBOARD
+          </motion.button>
         </Link>
       </motion.div>
     </div>

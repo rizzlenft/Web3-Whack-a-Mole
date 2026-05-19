@@ -2,27 +2,31 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GameRound } from '@/hooks/use-game-engine';
 
-const ROUND_INFO: Record<GameRound, {
+const INFO: Record<GameRound, {
   label: string; emoji: string; desc: string;
-  color: string; glow: string; bgAccent: string; hint: string;
+  textCls: string; glowStyle: React.CSSProperties;
+  bgGlow: string; hint: string;
 }> = {
   1: {
     label: 'ROUND 1', emoji: '🐀', desc: 'BONK THE SCAMMERS',
-    color: 'text-primary', glow: 'text-shadow-neon',
-    bgAccent: 'bg-primary/5 border-primary/20',
-    hint: '🐀 Moles pop up and wait — click fast before they duck!',
+    textCls: 'text-primary',
+    glowStyle: { textShadow: '0 0 10px hsl(315,100%,60%), 0 0 30px hsl(315,100%,60%), 0 0 60px hsl(315,100%,60%,0.5)' },
+    bgGlow: 'from-primary/10',
+    hint: '🐀 Moles pop up and wait — click fast before they duck back down!',
   },
   2: {
     label: 'ROUND 2', emoji: '🌀', desc: 'THEY FLY NOW',
-    color: 'text-secondary', glow: 'text-shadow-cyan',
-    bgAccent: 'bg-secondary/5 border-secondary/20',
-    hint: '🌀 Moles launch through the air between holes — catch them at takeoff!',
+    textCls: 'text-secondary',
+    glowStyle: { textShadow: '0 0 10px hsl(185,100%,50%), 0 0 30px hsl(185,100%,50%), 0 0 60px hsl(185,100%,50%,0.5)' },
+    bgGlow: 'from-secondary/10',
+    hint: '🌀 Moles pop up, then launch through the air — catch them at takeoff!',
   },
   3: {
-    label: 'ROUND 3', emoji: '💀', desc: '⚡ TOTAL CHAOS ⚡',
-    color: 'text-destructive', glow: 'text-shadow-red',
-    bgAccent: 'bg-destructive/10 border-destructive/30',
-    hint: '💀 Both mechanics at max speed. No mercy. Down only.',
+    label: '⚡ CHAOS ⚡', emoji: '💀', desc: 'TOTAL RUG PULL',
+    textCls: 'text-destructive',
+    glowStyle: { textShadow: '0 0 10px hsl(0,100%,60%), 0 0 30px hsl(0,100%,60%), 0 0 60px hsl(0,100%,60%,0.5)' },
+    bgGlow: 'from-destructive/20',
+    hint: '💀 Both mechanics at full speed. No mercy. Down only.',
   },
 };
 
@@ -32,7 +36,7 @@ interface RoundTransitionScreenProps {
 
 export function RoundTransitionScreen({ nextRound }: RoundTransitionScreenProps) {
   const [countdown, setCountdown] = useState(3);
-  const info = ROUND_INFO[nextRound];
+  const info = INFO[nextRound];
 
   useEffect(() => {
     const t = setInterval(() => setCountdown(c => Math.max(0, c - 1)), 1000);
@@ -40,70 +44,71 @@ export function RoundTransitionScreen({ nextRound }: RoundTransitionScreenProps)
   }, []);
 
   return (
-    <div className={`w-full h-full min-h-[500px] flex flex-col items-center justify-center p-6 text-center relative overflow-hidden game-bg`}>
+    <div className="w-full h-full flex flex-col items-center justify-center relative overflow-hidden game-bg">
 
-      {/* Background pulse for chaos */}
+      {/* Radial background glow */}
+      <div className={`absolute inset-0 bg-gradient-radial ${info.bgGlow} to-transparent pointer-events-none`} />
+
+      {/* Chaos pulsing border */}
       {nextRound === 3 && (
-        <>
-          <motion.div
-            className="absolute inset-0 bg-destructive/10 pointer-events-none"
-            animate={{ opacity: [0.05, 0.2, 0.05] }}
-            transition={{ repeat: Infinity, duration: 0.8 }}
-          />
-          <div className="absolute inset-0 border-8 border-destructive/20 pointer-events-none" />
-        </>
+        <motion.div
+          className="absolute inset-0 border-8 border-destructive/0 pointer-events-none"
+          animate={{ borderColor: ['rgba(255,0,0,0)', 'rgba(255,0,0,0.3)', 'rgba(255,0,0,0)'] }}
+          transition={{ repeat: Infinity, duration: 0.7 }}
+        />
       )}
 
       <motion.div
-        initial={{ scale: 0.2, opacity: 0, y: 50 }}
+        initial={{ scale: 0.15, opacity: 0, y: 60 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
-        transition={{ type: 'spring', bounce: 0.5, duration: 0.65 }}
-        className="flex flex-col items-center gap-5 z-10 w-full max-w-sm"
+        transition={{ type: 'spring', bounce: 0.48, duration: 0.6 }}
+        className="flex flex-col items-center gap-4 z-10 w-full max-w-sm px-6 text-center"
       >
         {/* Emoji */}
         <motion.div
-          animate={{ scale: [1, 1.25, 1], rotate: [0, -12, 12, 0] }}
-          transition={{ repeat: Infinity, duration: 1.1 }}
-          className="text-6xl md:text-7xl"
+          animate={{ scale: [1, 1.28, 1], rotate: [0, -14, 14, 0] }}
+          transition={{ repeat: Infinity, duration: 1.0 }}
+          className="text-6xl md:text-7xl leading-none"
         >
           {info.emoji}
         </motion.div>
 
-        {/* Round label */}
+        {/* Label + desc */}
         <div>
-          <div className={`font-display text-4xl md:text-6xl ${info.color} ${info.glow} leading-tight`}>
+          <div className={`font-display text-3xl md:text-5xl ${info.textCls} leading-none`} style={info.glowStyle}>
             {info.label}
           </div>
-          <div className={`font-display text-lg md:text-2xl ${info.color} opacity-80 mt-2 tracking-widest`}>
+          <div className={`font-display text-sm md:text-xl ${info.textCls} opacity-75 mt-2 tracking-widest`}>
             {info.desc}
           </div>
         </div>
 
         {/* Countdown */}
-        <div className="flex flex-col items-center gap-1 mt-2">
-          <span className="font-display text-xs text-zinc-400 tracking-widest">GET READY IN</span>
+        <div className="flex flex-col items-center gap-0.5">
+          <span className="font-display text-[9px] text-zinc-500 tracking-widest">GET READY IN</span>
           <AnimatePresence mode="wait">
             <motion.div
               key={countdown}
-              initial={{ scale: 2.2, opacity: 0 }}
+              initial={{ scale: 2.4, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.2, opacity: 0 }}
-              transition={{ duration: 0.28 }}
-              className={`font-display text-7xl md:text-8xl ${info.color} ${info.glow}`}
+              exit={{ scale: 0.1, opacity: 0 }}
+              transition={{ duration: 0.26 }}
+              className={`font-display text-8xl md:text-9xl ${info.textCls} leading-none`}
+              style={info.glowStyle}
             >
               {countdown > 0 ? countdown : 'GO!'}
             </motion.div>
           </AnimatePresence>
         </div>
 
-        {/* Hint badge */}
+        {/* Hint */}
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className={`w-full border ${info.bgAccent} rounded px-4 py-3`}
+          className="w-full bg-black/60 border border-zinc-700 rounded px-4 py-2.5"
         >
-          <p className={`font-sans text-base ${info.color} opacity-80 leading-snug`}>
+          <p className="font-sans text-sm md:text-base text-zinc-300 leading-snug">
             {info.hint}
           </p>
         </motion.div>

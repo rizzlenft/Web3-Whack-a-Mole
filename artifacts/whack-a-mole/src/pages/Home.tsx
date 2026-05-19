@@ -19,10 +19,10 @@ export function Home() {
   } = useGameEngine();
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-4 py-8 relative">
+    <div className="h-screen w-full flex items-stretch justify-center p-4 relative overflow-hidden">
       
       <div 
-        className="fixed inset-0 z-[-1] opacity-40 object-cover w-full h-full pointer-events-none"
+        className="fixed inset-0 z-[-1] opacity-40 pointer-events-none"
         style={{
           backgroundImage: `url(${import.meta.env.BASE_URL}images/arcade-bg.png)`,
           backgroundSize: 'cover',
@@ -30,7 +30,7 @@ export function Home() {
         }}
       />
 
-      <ArcadeCabinet>
+      <ArcadeCabinet className="h-full">
         {status === 'START' && (
           <StartScreen onStart={startGame} />
         )}
