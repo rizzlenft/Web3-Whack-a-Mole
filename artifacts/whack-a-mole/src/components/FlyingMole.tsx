@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { FlyingMoleEntry } from '@/hooks/use-game-engine';
+import { FlyingMoleEntry, MoleType } from '@/hooks/use-game-engine';
 
 const PFP_IMAGES = ['placeholder-pfp.png', 'pfp-2.png'];
 
@@ -11,9 +11,10 @@ interface FlyingMoleProps {
   dstX: number;
   dstY: number;
   size: number;
+  onWhack?: (id: string, moleType: MoleType, clientX: number, clientY: number) => void;
 }
 
-export function FlyingMole({ entry, srcX, srcY, dstX, dstY, size }: FlyingMoleProps) {
+export function FlyingMole({ entry, srcX, srcY, dstX, dstY, size, onWhack }: FlyingMoleProps) {
   const pfpFile = PFP_IMAGES[entry.pfp % PFP_IMAGES.length] ?? PFP_IMAGES[0];
   const pfpSrc  = `${import.meta.env.BASE_URL}${pfpFile}`;
 
@@ -34,9 +35,17 @@ export function FlyingMole({ entry, srcX, srcY, dstX, dstY, size }: FlyingMolePr
     ? '0 0 22px rgba(255,0,0,0.8), 0 4px 20px rgba(0,0,0,0.7)'
     : '0 0 18px rgba(0,255,255,0.7), 0 4px 20px rgba(0,0,0,0.6)';
 
+  const clickable = !!onWhack;
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (!onWhack) return;
+    e.stopPropagation();
+    onWhack(entry.id, entry.moleType, e.clientX, e.clientY);
+  };
+
   return (
     <motion.div
-      className="absolute pointer-events-none z-50"
+      className={`absolute z-50 ${clickable ? 'cursor-mallet' : 'pointer-events-none'}`}
       style={{ width: size, height: size, left: 0, top: 0, x: srcX - size / 2, y: srcY - size / 2 }}
       animate={{
         x: [srcX - size / 2, midX - size / 2, dstX - size / 2],
@@ -45,6 +54,7 @@ export function FlyingMole({ entry, srcX, srcY, dstX, dstY, size }: FlyingMolePr
         scale: [1, 1.18, 0.82],
       }}
       transition={{ duration, ease: 'easeInOut', times: [0, 0.42, 1] }}
+      onClick={handleClick}
     >
       <div
         className="w-full h-full rounded-full overflow-hidden border-4 relative"
@@ -72,6 +82,16 @@ export function FlyingMole({ entry, srcX, srcY, dstX, dstY, size }: FlyingMolePr
           <div className="absolute bottom-[-2px] right-[-2px] text-[10px] leading-none">
             {isGolden ? '👑' : '💀'}
           </div>
+        )}
+
+        {/* Clickable pulse ring */}
+        {clickable && (
+          <motion.div
+            className="absolute inset-[-4px] rounded-full pointer-events-none border-2"
+            style={{ borderColor }}
+            animate={{ opacity: [0, 0.6, 0], scale: [0.9, 1.3, 0.9] }}
+            transition={{ repeat: Infinity, duration: 0.9 }}
+          />
         )}
       </div>
 

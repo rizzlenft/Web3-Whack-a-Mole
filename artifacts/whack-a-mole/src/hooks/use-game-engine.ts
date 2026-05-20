@@ -23,7 +23,7 @@ export type FlyingMoleEntry = {
 
 const TOTAL_HOLES = 8;
 export const PFP_COUNT = 2;
-const TRANSITION_MS = 3000;
+const TRANSITION_MS = 4200;
 export const MOLE_POINTS: Record<MoleType, number> = { normal: 1, golden: 5, skull: -1 };
 
 const ROUND_CONFIG: Record<GameRound, { duration: number }> = {
@@ -340,7 +340,17 @@ export function useGameEngine() {
     beginRound(1);
   }, [beginRound]);
 
+  // Whack a flying mole mid-air
+  const whackFlyingMole = useCallback((flyId: string, moleType: MoleType) => {
+    setFlyingMoles(prev => {
+      if (!prev.find(f => f.id === flyId)) return prev;
+      const pts = MOLE_POINTS[moleType];
+      setScore(s => Math.max(0, s + pts));
+      return prev.filter(f => f.id !== flyId);
+    });
+  }, []);
+
   useEffect(() => { return () => stopAllTimers(); }, [stopAllTimers]);
 
-  return { status, round, score, timeLeft, moles, flyingMoles, startGame, whackMole, onCountdownDone };
+  return { status, round, score, timeLeft, moles, flyingMoles, startGame, whackMole, whackFlyingMole, onCountdownDone };
 }

@@ -12,6 +12,7 @@ interface GameScreenProps {
   moles: MoleState[];
   flyingMoles: FlyingMoleEntry[];
   onWhack: (id: number) => void;
+  onWhackFlying: (id: string, moleType: MoleType) => void;
   round: GameRound;
 }
 
@@ -21,7 +22,7 @@ const ROUND_CONFIG: Record<GameRound, { label: string; sub: string; color: strin
   3: { label: '⚡ CHAOS', sub: 'NO MERCY', color: 'text-destructive', border: 'border-destructive', duration: 10 },
 };
 
-export function GameScreen({ score, timeLeft, moles, flyingMoles, onWhack, round }: GameScreenProps) {
+export function GameScreen({ score, timeLeft, moles, flyingMoles, onWhack, onWhackFlying, round }: GameScreenProps) {
   const [combo, setCombo]           = useState(0);
   const [lastWhackTime, setLWT]     = useState(0);
   const [prevScore, setPrevScore]   = useState(score);
@@ -150,6 +151,23 @@ export function GameScreen({ score, timeLeft, moles, flyingMoles, onWhack, round
     });
     prevFlyRef.current = flyingMoles;
   }, [flyingMoles, snd]);
+
+  const handleFlyWhack = useCallback((id: string, moleType: MoleType, clientX: number, clientY: number) => {
+    const outer = outerRef.current;
+    const or = outer ? outer.getBoundingClientRect() : { left: 0, top: 0 };
+    const x = clientX - or.left;
+    const y = clientY - or.top;
+    const pts = MOLE_POINTS[moleType];
+    const label = moleType === 'golden' ? '+5 👑 MID-AIR!' : moleType === 'skull' ? '-1 💀 DODGED' : '+1 MID-AIR!';
+    setFloats(f => [...f, { id: `fly_${id}_${Date.now()}`, x, y, value: pts, label }]);
+    setWhackFlash(true);
+    setTimeout(() => setWhackFlash(false), 80);
+    setShake(true);
+    setTimeout(() => setShake(false), 350);
+    if (moleType === 'golden') snd.goldenBonk();
+    else snd.bonk();
+    onWhackFlying(id, moleType);
+  }, [onWhackFlying, snd]);
 
   return (
     <div
@@ -284,6 +302,7 @@ export function GameScreen({ score, timeLeft, moles, flyingMoles, onWhack, round
             srcX={src.x} srcY={src.y}
             dstX={dst.x} dstY={dst.y}
             size={getFlySize()}
+            onWhack={handleFlyWhack}
           />
         );
       })}

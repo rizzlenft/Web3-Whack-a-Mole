@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useGameEngine, GameRound } from '@/hooks/use-game-engine';
 import { ArcadeCabinet } from '@/components/ArcadeCabinet';
 import { StartScreen } from './StartScreen';
@@ -17,8 +17,15 @@ export function Home() {
     flyingMoles,
     startGame,
     whackMole,
+    whackFlyingMole,
     onCountdownDone,
   } = useGameEngine();
+
+  // Capture score at the moment each round ends (for display in transition screen)
+  const [roundEndScore, setRoundEndScore] = useState(0);
+  useEffect(() => {
+    if (status === 'TRANSITIONING') setRoundEndScore(score);
+  }, [status]); // intentionally omit score — capture once when status flips
 
   return (
     <div className="h-screen w-full flex items-stretch justify-center p-4 relative overflow-hidden">
@@ -43,12 +50,16 @@ export function Home() {
             moles={moles}
             flyingMoles={flyingMoles}
             onWhack={whackMole}
+            onWhackFlying={whackFlyingMole}
             round={round}
           />
         )}
 
         {status === 'TRANSITIONING' && (
-          <RoundTransitionScreen nextRound={(round + 1) as GameRound} />
+          <RoundTransitionScreen
+            nextRound={(round + 1) as GameRound}
+            score={roundEndScore}
+          />
         )}
 
         {status === 'GAME_OVER' && (

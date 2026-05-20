@@ -33,9 +33,10 @@ const INFO: Record<GameRound, {
 
 interface RoundTransitionScreenProps {
   nextRound: GameRound;
+  score: number;
 }
 
-export function RoundTransitionScreen({ nextRound }: RoundTransitionScreenProps) {
+export function RoundTransitionScreen({ nextRound, score }: RoundTransitionScreenProps) {
   const [countdown, setCountdown] = useState(3);
   const info = INFO[nextRound];
 
@@ -130,6 +131,22 @@ export function RoundTransitionScreen({ nextRound }: RoundTransitionScreenProps)
             </motion.div>
           </AnimatePresence>
         </div>
+
+        {/* Score so far chip */}
+        <motion.div
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: 'spring', bounce: 0.5, delay: 0.2 }}
+          className="flex items-center gap-3 bg-black/70 border border-zinc-600/60 rounded-full px-5 py-2"
+        >
+          <span className="font-display text-[9px] text-zinc-400 tracking-widest">SCORE SO FAR</span>
+          <span
+            className={`font-sans text-2xl font-bold tracking-widest ${info.textCls}`}
+            style={info.glowStyle}
+          >
+            {score.toString().padStart(4, '0')}
+          </span>
+        </motion.div>
 
         {/* Hint */}
         <motion.div
