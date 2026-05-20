@@ -38,6 +38,7 @@ export function GameOverScreen({ score, onRestart }: GameOverScreenProps) {
   const [playerName, setPlayerName] = useState('');
   const [submitted, setSubmitted]   = useState(false);
   const [copied, setCopied]         = useState(false);
+  const [shareText, setShareText]   = useState<string | null>(null);
   const queryClient = useQueryClient();
   const flavor = getFlavorText(score);
 
@@ -83,17 +84,22 @@ export function GameOverScreen({ score, onRestart }: GameOverScreenProps) {
     submitScore({ data: { playerName: playerName.trim(), score } });
   };
 
+  const SHARE_MSG = `🐀 Web3 Whack-A-Mole — I scored ${score.toString().padStart(4, '0')} bonks!\nCan you beat me? Bonk the scammers, save the chain 📉`;
+
   const handleShare = async () => {
-    const text = `🐀 Web3 Whack-A-Mole — I scored ${score.toString().padStart(4, '0')} bonks!\nCan you beat me? Bonk the scammers, save the chain 📉`;
+    // 1. Try native share (works on mobile and desktop if not in a locked iframe)
+    if (navigator.share) {
+      try { await navigator.share({ title: 'Web3 Whack-A-Mole', text: SHARE_MSG }); return; } catch {}
+    }
+    // 2. Try clipboard API (may be blocked in cross-origin iframes)
     try {
-      if (navigator.share) {
-        await navigator.share({ title: 'Web3 Whack-A-Mole', text });
-      } else {
-        await navigator.clipboard.writeText(text);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      }
+      await navigator.clipboard.writeText(SHARE_MSG);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+      return;
     } catch {}
+    // 3. Fallback: show selectable text overlay so the user can copy manually
+    setShareText(SHARE_MSG);
   };
 
   return (
@@ -282,6 +288,55 @@ export function GameOverScreen({ score, onRestart }: GameOverScreenProps) {
           </motion.button>
         </Link>
       </motion.div>
+
+      {/* ── Share text fallback (iframe / clipboard blocked) ─── */}
+      <AnimatePresence>
+        {shareText && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-[80] flex items-center justify-center bg-black/80 px-6"
+            onClick={() => setShareText(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.88, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.88, opacity: 0 }}
+              onClick={e => e.stopPropagation()}
+              className="w-full max-w-sm bg-zinc-950 border-4 border-secondary rounded box-shadow-cyan p-4 flex flex-col gap-3"
+            >
+              <span className="font-display text-[9px] text-secondary tracking-widest">COPY & SHARE</span>
+              <textarea
+                readOnly
+                rows={3}
+                value={shareText}
+                onFocus={e => e.target.select()}
+                className="w-full bg-zinc-900 border-2 border-secondary/40 text-zinc-200 font-sans text-sm p-2 rounded resize-none focus:outline-none focus:border-secondary"
+              />
+              <div className="flex gap-2">
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={async () => {
+                    try { await navigator.clipboard.writeText(shareText); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch {}
+                    setShareText(null);
+                  }}
+                  className="flex-1 py-2 font-display text-[9px] text-black bg-secondary rounded tracking-widest"
+                >
+                  {copied ? 'COPIED!' : 'COPY TEXT'}
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShareText(null)}
+                  className="flex-1 py-2 font-display text-[9px] text-zinc-400 border border-zinc-700 rounded tracking-widest"
+                >
+                  CLOSE
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
