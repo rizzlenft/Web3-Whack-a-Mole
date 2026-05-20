@@ -213,14 +213,42 @@ export function GameScreen({ score, timeLeft, moles, flyingMoles, onWhack, round
         </div>
 
         {/* Timer bar */}
-        <div className="mt-1.5 w-full h-1 bg-zinc-900 rounded-full overflow-hidden">
+        <div className="mt-1.5 w-full h-1.5 bg-zinc-900 rounded-full overflow-hidden">
           <motion.div
             className={`h-full rounded-full ${barCls}`}
             animate={{ width: `${pct}%` }}
             transition={{ duration: 0.9, ease: 'linear' }}
           />
         </div>
+
+        {/* Mole type legend */}
+        <div className="flex items-center justify-center gap-4 mt-1.5">
+          <span className="font-display text-[7px] text-accent tracking-widest">⚡ +1</span>
+          <span className="font-display text-[7px] text-yellow-400 tracking-widest">👑 +5</span>
+          <span className="font-display text-[7px] text-destructive tracking-widest">💀 -1</span>
+        </div>
       </div>
+
+      {/* ── Last-5s urgency banner ────────────────────────── */}
+      <AnimatePresence>
+        {isCritical && (
+          <motion.div
+            initial={{ scaleY: 0, opacity: 0 }}
+            animate={{ scaleY: 1, opacity: 1 }}
+            exit={{ scaleY: 0, opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="flex-shrink-0 bg-destructive/25 border-b-2 border-destructive/60 flex items-center justify-center gap-2 py-1 z-20"
+          >
+            <motion.span
+              animate={{ opacity: [1, 0.3, 1] }}
+              transition={{ repeat: Infinity, duration: 0.4 }}
+              className="font-display text-[9px] text-destructive tracking-widest whitespace-nowrap"
+            >
+              ⚠️ LAST {timeLeft}s — BONK FASTER SER ⚠️
+            </motion.span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── Grid ─────────────────────────────────────────── */}
       <div className="flex-1 flex items-center justify-center z-10 px-2 py-1">

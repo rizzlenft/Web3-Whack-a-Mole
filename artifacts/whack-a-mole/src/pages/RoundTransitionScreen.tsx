@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GameRound } from '@/hooks/use-game-engine';
+import { playCountdownBeep, playRoundStart } from '@/hooks/use-sound';
 
 const INFO: Record<GameRound, {
   label: string; emoji: string; desc: string;
@@ -10,23 +11,23 @@ const INFO: Record<GameRound, {
   1: {
     label: 'ROUND 1', emoji: '🐀', desc: 'BONK THE SCAMMERS',
     textCls: 'text-primary',
-    glowStyle: { textShadow: '0 0 10px hsl(315,100%,60%), 0 0 30px hsl(315,100%,60%), 0 0 60px hsl(315,100%,60%,0.5)' },
-    bgGlow: 'from-primary/10',
-    hint: '🐀 Moles pop up and wait — click fast before they duck back down!',
+    glowStyle: { textShadow: '0 0 10px hsl(315,100%,60%), 0 0 35px hsl(315,100%,60%), 0 0 70px hsl(315,100%,60%,0.4)' },
+    bgGlow: 'from-primary/15',
+    hint: '🐀 Moles pop up — click fast before they duck back down! 👑 Gold = +5 | 💀 Skull = -1',
   },
   2: {
     label: 'ROUND 2', emoji: '🌀', desc: 'THEY FLY NOW',
     textCls: 'text-secondary',
-    glowStyle: { textShadow: '0 0 10px hsl(185,100%,50%), 0 0 30px hsl(185,100%,50%), 0 0 60px hsl(185,100%,50%,0.5)' },
-    bgGlow: 'from-secondary/10',
-    hint: '🌀 Moles pop up, then launch through the air — catch them at takeoff!',
+    glowStyle: { textShadow: '0 0 10px hsl(185,100%,50%), 0 0 35px hsl(185,100%,50%), 0 0 70px hsl(185,100%,50%,0.4)' },
+    bgGlow: 'from-secondary/15',
+    hint: '🌀 Moles pop up, then LAUNCH through the air — hit them at takeoff for easy points!',
   },
   3: {
     label: '⚡ CHAOS ⚡', emoji: '💀', desc: 'TOTAL RUG PULL',
     textCls: 'text-destructive',
-    glowStyle: { textShadow: '0 0 10px hsl(0,100%,60%), 0 0 30px hsl(0,100%,60%), 0 0 60px hsl(0,100%,60%,0.5)' },
+    glowStyle: { textShadow: '0 0 10px hsl(0,100%,60%), 0 0 35px hsl(0,100%,60%), 0 0 70px hsl(0,100%,60%,0.4)' },
     bgGlow: 'from-destructive/20',
-    hint: '💀 Both mechanics at full speed. No mercy. Down only.',
+    hint: '💀 Both mechanics — FULL SPEED. No mercy. Down only. This is your last 10 seconds.',
   },
 };
 
@@ -39,7 +40,20 @@ export function RoundTransitionScreen({ nextRound }: RoundTransitionScreenProps)
   const info = INFO[nextRound];
 
   useEffect(() => {
-    const t = setInterval(() => setCountdown(c => Math.max(0, c - 1)), 1000);
+    // Beep on first render
+    playCountdownBeep(false);
+
+    const t = setInterval(() => {
+      setCountdown(c => {
+        const next = Math.max(0, c - 1);
+        if (next === 0) {
+          playRoundStart();
+        } else {
+          playCountdownBeep(false);
+        }
+        return next;
+      });
+    }, 1000);
     return () => clearInterval(t);
   }, []);
 
@@ -52,22 +66,26 @@ export function RoundTransitionScreen({ nextRound }: RoundTransitionScreenProps)
       {/* Chaos pulsing border */}
       {nextRound === 3 && (
         <motion.div
-          className="absolute inset-0 border-8 border-destructive/0 pointer-events-none"
-          animate={{ borderColor: ['rgba(255,0,0,0)', 'rgba(255,0,0,0.3)', 'rgba(255,0,0,0)'] }}
-          transition={{ repeat: Infinity, duration: 0.7 }}
+          className="absolute inset-0 pointer-events-none"
+          style={{ border: '8px solid transparent' }}
+          animate={{ borderColor: ['rgba(255,0,0,0)', 'rgba(255,0,0,0.4)', 'rgba(255,0,0,0)'] }}
+          transition={{ repeat: Infinity, duration: 0.55 }}
         />
       )}
 
+      {/* Scanlines overlay */}
+      <div className="scanlines" />
+
       <motion.div
-        initial={{ scale: 0.15, opacity: 0, y: 60 }}
+        initial={{ scale: 0.1, opacity: 0, y: 60 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
-        transition={{ type: 'spring', bounce: 0.48, duration: 0.6 }}
+        transition={{ type: 'spring', bounce: 0.5, duration: 0.55 }}
         className="flex flex-col items-center gap-4 z-10 w-full max-w-sm px-6 text-center"
       >
         {/* Emoji */}
         <motion.div
-          animate={{ scale: [1, 1.28, 1], rotate: [0, -14, 14, 0] }}
-          transition={{ repeat: Infinity, duration: 1.0 }}
+          animate={{ scale: [1, 1.3, 1], rotate: [0, -16, 16, 0] }}
+          transition={{ repeat: Infinity, duration: 0.85 }}
           className="text-6xl md:text-7xl leading-none"
         >
           {info.emoji}
@@ -75,26 +93,38 @@ export function RoundTransitionScreen({ nextRound }: RoundTransitionScreenProps)
 
         {/* Label + desc */}
         <div>
-          <div className={`font-display text-3xl md:text-5xl ${info.textCls} leading-none`} style={info.glowStyle}>
+          <div
+            className={`font-display text-3xl md:text-5xl ${info.textCls} leading-none`}
+            style={info.glowStyle}
+          >
             {info.label}
           </div>
-          <div className={`font-display text-sm md:text-xl ${info.textCls} opacity-75 mt-2 tracking-widest`}>
+          <div className={`font-display text-sm md:text-lg ${info.textCls} opacity-80 mt-2 tracking-widest`}>
             {info.desc}
           </div>
         </div>
 
         {/* Countdown */}
         <div className="flex flex-col items-center gap-0.5">
-          <span className="font-display text-[9px] text-zinc-500 tracking-widest">GET READY IN</span>
+          <span className="font-display text-[9px] text-zinc-500 tracking-widest">
+            {countdown > 0 ? 'GET READY IN' : 'GO GO GO!!!'}
+          </span>
           <AnimatePresence mode="wait">
             <motion.div
               key={countdown}
-              initial={{ scale: 2.4, opacity: 0 }}
+              initial={{ scale: 2.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.1, opacity: 0 }}
-              transition={{ duration: 0.26 }}
-              className={`font-display text-8xl md:text-9xl ${info.textCls} leading-none`}
-              style={info.glowStyle}
+              exit={{ scale: 0.05, opacity: 0 }}
+              transition={{ duration: 0.22 }}
+              className={`font-display leading-none ${
+                countdown === 0
+                  ? `text-accent text-7xl md:text-8xl`
+                  : `text-8xl md:text-9xl ${info.textCls}`
+              }`}
+              style={countdown === 0
+                ? { textShadow: '0 0 15px hsl(140,100%,55%), 0 0 40px hsl(140,100%,55%)' }
+                : info.glowStyle
+              }
             >
               {countdown > 0 ? countdown : 'GO!'}
             </motion.div>
@@ -103,12 +133,12 @@ export function RoundTransitionScreen({ nextRound }: RoundTransitionScreenProps)
 
         {/* Hint */}
         <motion.div
-          initial={{ opacity: 0, y: 8 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="w-full bg-black/60 border border-zinc-700 rounded px-4 py-2.5"
+          transition={{ delay: 0.4 }}
+          className="w-full bg-black/65 border border-zinc-700/80 rounded px-4 py-2.5"
         >
-          <p className="font-sans text-sm md:text-base text-zinc-300 leading-snug">
+          <p className="font-sans text-sm md:text-base text-zinc-200 leading-snug">
             {info.hint}
           </p>
         </motion.div>

@@ -18,6 +18,7 @@ export type FlyingMoleEntry = {
   toHole: number;
   pfp: number;
   duration: number;
+  moleType: MoleType;
 };
 
 const TOTAL_HOLES = 8;
@@ -159,7 +160,7 @@ export function useGameEngine() {
               const flyId = `fly_${chainId}_${Date.now()}`;
               setFlyingMoles(fms => [
                 ...fms,
-                { id: flyId, fromHole: holeId, toHole: destHole, pfp, duration: flyMs },
+                { id: flyId, fromHole: holeId, toHole: destHole, pfp, duration: flyMs, moleType },
               ]);
               sched(`pc_${chainId}_fly`, () => {
                 if (!guard()) return;
@@ -244,7 +245,7 @@ export function useGameEngine() {
               const flyId = `cfly_${chainId}_${Date.now()}`;
               setFlyingMoles(fms => [
                 ...fms,
-                { id: flyId, fromHole: holeId, toHole: destHole, pfp, duration: flyMs },
+                { id: flyId, fromHole: holeId, toHole: destHole, pfp, duration: flyMs, moleType },
               ]);
               sched(`cpc_${chainId}_fly`, () => {
                 if (!guard()) return;
