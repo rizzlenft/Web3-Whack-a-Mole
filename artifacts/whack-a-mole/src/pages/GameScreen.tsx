@@ -156,6 +156,18 @@ export function GameScreen({ score, timeLeft, moles, flyingMoles, onWhack, round
       ref={outerRef}
       className={`w-full h-full flex flex-col game-bg relative overflow-hidden cursor-mallet select-none ${shake ? 'animate-shake' : ''}`}
     >
+      {/* Round color tint — unique identity per round */}
+      <div
+        className="absolute inset-0 pointer-events-none z-[1] transition-colors duration-1000"
+        style={{
+          background: round === 1
+            ? 'radial-gradient(ellipse 80% 70% at 50% 60%, hsl(315,100%,60%,0.07) 0%, transparent 70%)'
+            : round === 2
+            ? 'radial-gradient(ellipse 80% 70% at 50% 60%, hsl(185,100%,50%,0.07) 0%, transparent 70%)'
+            : 'radial-gradient(ellipse 80% 70% at 50% 60%, hsl(0,100%,60%,0.1) 0%, transparent 70%)',
+        }}
+      />
+
       {/* Whack flash */}
       {whackFlash && <div className="absolute inset-0 z-[70] pointer-events-none bg-white opacity-[0.18]" />}
       {/* Chaos strobe */}
