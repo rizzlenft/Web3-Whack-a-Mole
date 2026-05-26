@@ -2,7 +2,15 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { FlyingMoleEntry, MoleType } from '@/hooks/use-game-engine';
 
-const PFP_IMAGES = ['placeholder-pfp.png', 'pfp-2.png'];
+const PFP_IMAGES = [
+  'placeholder-pfp.png',
+  'pfp-2.png',
+  'pfp-3.png',
+  'pfp-4.png',
+  'pfp-5.png',
+  'pfp-6.png',
+  'pfp-7.png',
+];
 
 interface FlyingMoleProps {
   entry: FlyingMoleEntry;

@@ -18,7 +18,15 @@ const DEGEN_PHRASES = [
 const GOLDEN_PHRASES = ['5× GOLD!', 'CHAD!', 'ALPHA!', 'MOONING!', 'LFG!!!'];
 const SKULL_PHRASES  = ['-1 REKT', 'HACKED!', 'RUG PULL', 'OH NO SER'];
 
-const PFP_IMAGES = ['placeholder-pfp.png', 'pfp-2.png'];
+const PFP_IMAGES = [
+  'placeholder-pfp.png',
+  'pfp-2.png',
+  'pfp-3.png',
+  'pfp-4.png',
+  'pfp-5.png',
+  'pfp-6.png',
+  'pfp-7.png',
+];
 
 function getRandomPhrase(phrases: string[]) {
   return phrases[Math.floor(Math.random() * phrases.length)];

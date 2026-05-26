@@ -22,7 +22,7 @@ export type FlyingMoleEntry = {
 };
 
 const TOTAL_HOLES = 8;
-export const PFP_COUNT = 2;
+export const PFP_COUNT = 7;
 const TRANSITION_MS = 4200;
 export const MOLE_POINTS: Record<MoleType, number> = { normal: 1, golden: 5, skull: -1 };
 
