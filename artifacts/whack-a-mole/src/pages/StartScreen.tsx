@@ -4,6 +4,7 @@ import { Trophy, Zap } from 'lucide-react';
 import { Link } from 'wouter';
 import { useGetLeaderboard } from '@workspace/api-client-react';
 import { useEmbedded } from '@/contexts/EmbeddedContext';
+import { unlockAudio } from '@/hooks/use-sound';
 
 interface StartScreenProps {
   onStart: () => void;
@@ -131,7 +132,9 @@ export function StartScreen({ onStart }: StartScreenProps) {
           className={`flex flex-col w-full ${embedded ? "gap-1.5 max-w-[240px]" : "gap-2.5 max-w-[300px]"}`}
         >
           <motion.button
-            onClick={onStart}
+            onClick={() => {
+              void unlockAudio().then(() => onStart());
+            }}
             whileHover={{ scale: 1.05, boxShadow: '0 0 40px hsl(315,100%,60%,0.7)' }}
             whileTap={{ scale: 0.95 }}
             className={`w-full font-display text-black bg-primary tracking-widest uppercase flex items-center justify-center gap-2 rounded neon-border-pulse shadow-[0_0_35px_hsl(315,100%,60%,0.6)] whitespace-nowrap ${embedded ? "py-2 text-[10px]" : "py-3.5 text-[12px]"}`}

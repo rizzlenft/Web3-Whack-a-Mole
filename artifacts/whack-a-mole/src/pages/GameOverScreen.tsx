@@ -6,6 +6,7 @@ import { RotateCcw, Trophy, CheckCircle2, Zap, Share2, Star } from 'lucide-react
 import { Link } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
 import { playGameOver } from '@/hooks/use-sound';
+import { notifyParentWhackScore } from '@/lib/notify-parent';
 
 const PB_KEY = 'w3wam_pb';
 
@@ -52,9 +53,10 @@ export function GameOverScreen({ score, onRestart }: GameOverScreenProps) {
 
   const { mutate: submitScore, isPending } = useSubmitScore({
     mutation: {
-      onSuccess: () => {
+      onSuccess: (_data, variables) => {
         setSubmitted(true);
         queryClient.invalidateQueries({ queryKey: ['/api/leaderboard'] });
+        notifyParentWhackScore(variables.data.score, variables.data.playerName);
       }
     }
   });

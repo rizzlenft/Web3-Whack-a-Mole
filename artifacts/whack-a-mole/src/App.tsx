@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { EmbeddedProvider } from "@/contexts/EmbeddedContext";
+import { useAudioUnlock } from "@/hooks/use-sound";
 import NotFound from "@/pages/not-found";
 
 import { Home } from "@/pages/Home";
@@ -39,6 +40,7 @@ function Router() {
 }
 
 function App() {
+  useAudioUnlock();
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>

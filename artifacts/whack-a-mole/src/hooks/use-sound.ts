@@ -1,12 +1,52 @@
-import { useRef, useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 
-// Web Audio API sound engine — no external deps, no file loading.
-// All sounds are synthesised procedurally.
+// Web Audio API sound engine — procedural synth, no external files.
+
+type AudioCtxCtor = typeof AudioContext;
 
 let _ctx: AudioContext | null = null;
-function getCtx(): AudioContext {
-  if (!_ctx) _ctx = new AudioContext();
-  if (_ctx.state === 'suspended') _ctx.resume();
+let _unlocked = false;
+let _unlockPromise: Promise<boolean> | null = null;
+
+function createCtx(): AudioContext {
+  const Ctx = (window.AudioContext ?? (window as Window & { webkitAudioContext?: AudioCtxCtor }).webkitAudioContext) as AudioCtxCtor | undefined;
+  if (!Ctx) throw new Error('Web Audio not supported');
+  return new Ctx();
+}
+
+/** Call from PLAY or first user gesture — required on iOS/mobile. */
+export async function unlockAudio(): Promise<boolean> {
+  if (_unlocked && _ctx?.state === 'running') return true;
+  if (_unlockPromise) return _unlockPromise;
+
+  _unlockPromise = (async () => {
+    try {
+      if (!_ctx) _ctx = createCtx();
+      if (_ctx.state === 'suspended') await _ctx.resume();
+      const buf = _ctx.createBuffer(1, 1, _ctx.sampleRate);
+      const src = _ctx.createBufferSource();
+      src.buffer = buf;
+      src.connect(_ctx.destination);
+      src.start(0);
+      _unlocked = true;
+      return true;
+    } catch {
+      return false;
+    } finally {
+      _unlockPromise = null;
+    }
+  })();
+
+  return _unlockPromise;
+}
+
+export function isAudioUnlocked(): boolean {
+  return _unlocked && !!_ctx && _ctx.state === 'running';
+}
+
+function getCtx(): AudioContext | null {
+  if (!_unlocked || !_ctx) return null;
+  if (_ctx.state === 'suspended') void _ctx.resume();
   return _ctx;
 }
 
@@ -16,13 +56,11 @@ function gain(ctx: AudioContext, value: number) {
   return g;
 }
 
-// ── Individual synth sounds ──────────────────────────────────────────
-
 export function playBonk() {
   try {
     const ctx = getCtx();
+    if (!ctx) return;
     const t = ctx.currentTime;
-    // Punchy thump: sine + distorted square
     const osc1 = ctx.createOscillator();
     const osc2 = ctx.createOscillator();
     const g = gain(ctx, 0.45);
@@ -40,14 +78,14 @@ export function playBonk() {
     g2.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
     osc1.start(t); osc1.stop(t + 0.2);
     osc2.start(t); osc2.stop(t + 0.15);
-  } catch {}
+  } catch { /* noop */ }
 }
 
 export function playMiss() {
   try {
     const ctx = getCtx();
+    if (!ctx) return;
     const t = ctx.currentTime;
-    // Sad descending blip
     const osc = ctx.createOscillator();
     const g = gain(ctx, 0.18);
     osc.type = 'sawtooth';
@@ -57,14 +95,14 @@ export function playMiss() {
     g.gain.setValueAtTime(0.18, t);
     g.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
     osc.start(t); osc.stop(t + 0.3);
-  } catch {}
+  } catch { /* noop */ }
 }
 
 export function playGoldenBonk() {
   try {
     const ctx = getCtx();
+    if (!ctx) return;
     const t = ctx.currentTime;
-    // Ascending sparkle arpeggio
     [523, 659, 784, 1047].forEach((freq, i) => {
       const osc = ctx.createOscillator();
       const g = gain(ctx, 0.22);
@@ -75,12 +113,13 @@ export function playGoldenBonk() {
       g.gain.exponentialRampToValueAtTime(0.001, t + i * 0.07 + 0.18);
       osc.start(t + i * 0.07); osc.stop(t + i * 0.07 + 0.2);
     });
-  } catch {}
+  } catch { /* noop */ }
 }
 
 export function playCombo(comboCount: number) {
   try {
     const ctx = getCtx();
+    if (!ctx) return;
     const t = ctx.currentTime;
     const freqs = [440, 554, 659, 880, 1108];
     const freq = freqs[Math.min(comboCount - 2, freqs.length - 1)];
@@ -93,14 +132,14 @@ export function playCombo(comboCount: number) {
     g.gain.setValueAtTime(0.25, t);
     g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
     osc.start(t); osc.stop(t + 0.2);
-  } catch {}
+  } catch { /* noop */ }
 }
 
 export function playRoundStart() {
   try {
     const ctx = getCtx();
+    if (!ctx) return;
     const t = ctx.currentTime;
-    // Rising 3-note fanfare
     [330, 440, 660].forEach((f, i) => {
       const osc = ctx.createOscillator();
       const g = gain(ctx, 0.3);
@@ -111,12 +150,13 @@ export function playRoundStart() {
       g.gain.exponentialRampToValueAtTime(0.001, t + i * 0.12 + 0.14);
       osc.start(t + i * 0.12); osc.stop(t + i * 0.12 + 0.16);
     });
-  } catch {}
+  } catch { /* noop */ }
 }
 
 export function playCountdownBeep(isFinal: boolean) {
   try {
     const ctx = getCtx();
+    if (!ctx) return;
     const t = ctx.currentTime;
     const freq = isFinal ? 880 : 440;
     const osc = ctx.createOscillator();
@@ -127,12 +167,13 @@ export function playCountdownBeep(isFinal: boolean) {
     g.gain.setValueAtTime(0.3, t);
     g.gain.exponentialRampToValueAtTime(0.001, t + (isFinal ? 0.4 : 0.12));
     osc.start(t); osc.stop(t + (isFinal ? 0.45 : 0.15));
-  } catch {}
+  } catch { /* noop */ }
 }
 
 export function playTimerTick() {
   try {
     const ctx = getCtx();
+    if (!ctx) return;
     const t = ctx.currentTime;
     const osc = ctx.createOscillator();
     const g = gain(ctx, 0.15);
@@ -142,14 +183,14 @@ export function playTimerTick() {
     g.gain.setValueAtTime(0.15, t);
     g.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
     osc.start(t); osc.stop(t + 0.1);
-  } catch {}
+  } catch { /* noop */ }
 }
 
 export function playGameOver() {
   try {
     const ctx = getCtx();
+    if (!ctx) return;
     const t = ctx.currentTime;
-    // Sad trombone descend
     [440, 370, 311, 220].forEach((f, i) => {
       const osc = ctx.createOscillator();
       const g = gain(ctx, 0.28);
@@ -161,14 +202,14 @@ export function playGameOver() {
       g.gain.exponentialRampToValueAtTime(0.001, t + i * 0.22 + 0.25);
       osc.start(t + i * 0.22); osc.stop(t + i * 0.22 + 0.28);
     });
-  } catch {}
+  } catch { /* noop */ }
 }
 
 export function playMolePop() {
   try {
     const ctx = getCtx();
+    if (!ctx) return;
     const t = ctx.currentTime;
-    // Quick rising pop
     const osc = ctx.createOscillator();
     const g = gain(ctx, 0.08);
     osc.type = 'sine';
@@ -178,12 +219,13 @@ export function playMolePop() {
     g.gain.setValueAtTime(0.08, t);
     g.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
     osc.start(t); osc.stop(t + 0.1);
-  } catch {}
+  } catch { /* noop */ }
 }
 
 export function playFlyWhoosh() {
   try {
     const ctx = getCtx();
+    if (!ctx) return;
     const t = ctx.currentTime;
     const buf = ctx.createBuffer(1, ctx.sampleRate * 0.25, ctx.sampleRate);
     const data = buf.getChannelData(0);
@@ -198,10 +240,23 @@ export function playFlyWhoosh() {
     const g = gain(ctx, 0.12);
     src.connect(bpf); bpf.connect(g); g.connect(ctx.destination);
     src.start(t); src.stop(t + 0.28);
-  } catch {}
+  } catch { /* noop */ }
 }
 
-// Hook exposing all sounds with stable refs
+/** One-time iOS unlock listeners — mirrors Rizzle Dash arcade pattern. */
+export function useAudioUnlock() {
+  useEffect(() => {
+    const events = ['touchstart', 'touchend', 'mousedown', 'pointerdown'] as const;
+    const handler = () => { void unlockAudio(); };
+    events.forEach((evt) => {
+      document.addEventListener(evt, handler, { capture: true, passive: true, once: true });
+    });
+    return () => {
+      events.forEach((evt) => document.removeEventListener(evt, handler, { capture: true }));
+    };
+  }, []);
+}
+
 export function useSound() {
   const bonk        = useCallback(playBonk, []);
   const miss        = useCallback(playMiss, []);
