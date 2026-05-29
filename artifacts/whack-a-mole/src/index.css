@@ -52,9 +52,18 @@
 
 @layer base {
   * { @apply border-border; }
+  html, body, #root {
+    height: 100%;
+  }
   body {
     @apply font-sans antialiased bg-background text-foreground overflow-x-hidden;
     background-color: hsl(var(--background));
+  }
+  html.embedded body {
+    overflow: hidden;
+  }
+  html.embedded #root {
+    min-height: 0;
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);

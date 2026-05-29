@@ -1,3 +1,4 @@
+import { useEmbedded } from '@/contexts/EmbeddedContext';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { MoleHole } from '@/components/MoleHole';
 import { FlyingMole } from '@/components/FlyingMole';
@@ -23,6 +24,7 @@ const ROUND_CONFIG: Record<GameRound, { label: string; sub: string; color: strin
 };
 
 export function GameScreen({ score, timeLeft, moles, flyingMoles, onWhack, onWhackFlying, round }: GameScreenProps) {
+  const embedded = useEmbedded();
   const [combo, setCombo]           = useState(0);
   const [lastWhackTime, setLWT]     = useState(0);
   const [prevScore, setPrevScore]   = useState(score);
@@ -204,7 +206,7 @@ export function GameScreen({ score, timeLeft, moles, flyingMoles, onWhack, onWha
               key={score}
               animate={scorePop ? { scale: [1, 1.4, 1] } : {}}
               transition={{ duration: 0.22 }}
-              className={`font-sans text-3xl font-bold tracking-widest leading-none ${isChaos ? 'text-destructive' : 'text-primary'} drop-shadow-[0_0_8px_currentColor]`}
+              className={`font-sans font-bold tracking-widest leading-none ${isChaos ? 'text-destructive' : 'text-primary'} drop-shadow-[0_0_8px_currentColor] ${embedded ? "text-xl" : "text-3xl"}`}
             >
               {score.toString().padStart(4, '0')}
             </motion.span>
@@ -235,7 +237,7 @@ export function GameScreen({ score, timeLeft, moles, flyingMoles, onWhack, onWha
               key={timeLeft}
               animate={isCritical ? { scale: [1, 1.2, 1] } : {}}
               transition={{ duration: 0.35 }}
-              className={`font-sans text-3xl font-bold tracking-widest leading-none ${timeCls} drop-shadow-[0_0_8px_currentColor] ${isCritical ? 'animate-pulse' : ''}`}
+              className={`font-sans font-bold tracking-widest leading-none ${timeCls} drop-shadow-[0_0_8px_currentColor] ${isCritical ? 'animate-pulse' : ''} ${embedded ? "text-xl" : "text-3xl"}`}
             >
               {timeLeft.toString().padStart(2, '0')}
             </motion.span>
@@ -282,7 +284,7 @@ export function GameScreen({ score, timeLeft, moles, flyingMoles, onWhack, onWha
 
       {/* ── Grid ─────────────────────────────────────────── */}
       <div className="flex-1 flex items-center justify-center z-10 px-2 py-1">
-        <div className="grid grid-cols-4 gap-1 sm:gap-2 md:gap-4 w-full max-w-2xl">
+        <div className={`grid grid-cols-4 w-full max-w-2xl ${embedded ? "gap-0.5" : "gap-1 sm:gap-2 md:gap-4"}`}>
           {moles.map((mole, i) => (
             <div key={mole.id} ref={el => { holeRefs.current[i] = el; }}>
               <MoleHole mole={mole} onWhack={handleWhack} />

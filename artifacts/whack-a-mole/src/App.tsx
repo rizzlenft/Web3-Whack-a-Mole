@@ -3,6 +3,7 @@ import { useBrowserLocation } from "wouter/use-browser-location";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { EmbeddedProvider } from "@/contexts/EmbeddedContext";
 import NotFound from "@/pages/not-found";
 
 import { Home } from "@/pages/Home";
@@ -45,7 +46,9 @@ function App() {
           base={import.meta.env.BASE_URL.replace(/\/$/, "")}
           hook={useGameLocation}
         >
-          <Router />
+          <EmbeddedProvider>
+            <Router />
+          </EmbeddedProvider>
         </WouterRouter>
         <Toaster />
       </TooltipProvider>

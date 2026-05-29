@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useEmbedded } from '@/contexts/EmbeddedContext';
 import { useGameEngine, GameRound } from '@/hooks/use-game-engine';
 import { ArcadeCabinet } from '@/components/ArcadeCabinet';
 import { StartScreen } from './StartScreen';
@@ -8,6 +9,7 @@ import { RoundTransitionScreen } from './RoundTransitionScreen';
 import { CountdownScreen } from './CountdownScreen';
 
 export function Home() {
+  const embedded = useEmbedded();
   const {
     status,
     round,
@@ -28,9 +30,15 @@ export function Home() {
   }, [status]); // intentionally omit score — capture once when status flips
 
   return (
-    <div className="h-screen w-full flex items-stretch justify-center p-4 relative overflow-hidden">
+    <div
+      className={
+        embedded
+          ? "h-full w-full flex items-stretch justify-center p-0.5 relative overflow-hidden min-h-0"
+          : "h-screen w-full flex items-stretch justify-center p-4 relative overflow-hidden"
+      }
+    >
       <div
-        className="fixed inset-0 z-[-1] opacity-40 pointer-events-none"
+        className={`fixed inset-0 z-[-1] pointer-events-none ${embedded ? "opacity-25" : "opacity-40"}`}
         style={{
           backgroundImage: `url(${import.meta.env.BASE_URL}images/arcade-bg.png)`,
           backgroundSize: 'cover',
