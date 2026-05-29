@@ -1,4 +1,5 @@
 import { Switch, Route, Router as WouterRouter } from "wouter";
+import { useBrowserLocation } from "wouter/use-browser-location";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -16,6 +17,16 @@ const queryClient = new QueryClient({
   },
 });
 
+/** When embedded via iframe at .../index.html, wouter sees /index.html — normalize to / */
+function useGameLocation(): ReturnType<typeof useBrowserLocation> {
+  const [location, navigate] = useBrowserLocation();
+  const normalized =
+    location === "/index.html" || location.endsWith("/index.html")
+      ? location.replace(/\/index\.html$/, "") || "/"
+      : location;
+  return [normalized, navigate];
+}
+
 function Router() {
   return (
     <Switch>
@@ -30,7 +41,10 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+        <WouterRouter
+          base={import.meta.env.BASE_URL.replace(/\/$/, "")}
+          hook={useGameLocation}
+        >
           <Router />
         </WouterRouter>
         <Toaster />
